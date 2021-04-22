@@ -1,4 +1,4 @@
-const { EventEmitter } = require('events')
+const {EventEmitter} = require('events')
 
 class ConnectorChannel extends EventEmitter {
     constructor(connector, channelKey, channelName) {
@@ -10,7 +10,7 @@ class ConnectorChannel extends EventEmitter {
         this._channelPeers = new Set()
 
         this.handlePeer = this.handlePeer.bind(this)
-        this.sendPacket = (packet) => this.send(packet)
+        this.sendPacket = (packet) => this.send('packet', packet)
 
         this._connector.on('peer', this.handlePeer)
     }
@@ -35,11 +35,15 @@ class ConnectorChannel extends EventEmitter {
         channelPeer.on('packet', (packet) => {
             this.emit('packet', channelPeer, packet)
         })
+
+        channelPeer.on('chunk', (chunk) => {
+            this.emit('chunk', channelPeer, chunk)
+        })
     }
 
-    send(packet) {
+    send(type, packet) {
         this.broadcast({
-            type: 'packet',
+            type,
             packet,
         })
     }
