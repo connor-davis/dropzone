@@ -1,0 +1,99 @@
+{
+    "name": "dropzone",
+    "version": "0.1.0",
+    "private": true,
+    "main": "main.js",
+    "homepage": "./",
+    "dependencies": {
+        "@craco/craco": "^5.6.3",
+        "@reduxjs/toolkit": "^1.5.0",
+        "axios": "^0.21.1",
+        "bootstrap": "^4.6.0",
+        "events": "^3.3.0",
+        "file-saver": "^2.0.5",
+        "hyperswarm": "^2.15.3",
+        "moment": "^2.29.1",
+        "ndjson": "^2.0.0",
+        "node-sass": "4.14.1",
+        "react": "^16.12.0",
+        "react-animations": "^1.0.0",
+        "react-dom": "^16.12.0",
+        "react-dropzone": "^11.3.2",
+        "react-icons": "^4.2.0",
+        "react-redux": "^7.2.2",
+        "react-scripts": "^3.3.0",
+        "reactstrap": "^8.9.0",
+        "redux": "^4.0.5",
+        "redux-axios-middleware": "^4.0.1",
+        "redux-persist": "^6.0.0",
+        "sodium-universal": "^3.0.4",
+        "styled-components": "^5.2.1",
+        "uuid": "^8.3.2"
+    },
+    "scripts": {
+        "analyze": "source-map-explorer 'build/static/js/*.js'",
+        "start": "concurrently \"yarn react-start\" \"wait-on http://localhost:3000/ && cross-env NODE_ENV=development yarn electron-start\"",
+        "build": "yarn react-build && yarn build-main && copyfiles -f ./package/package.json build/ && copyfiles ./utils/** build/ && copyfiles ./preload.js build/ && yarn electron-build && cd dist/dropzone-win32-x64/resources/app && yarn",
+        "electron-start": "electron .",
+        "electron-build": "electron-packager ./build --out=dist",
+        "react-start": "craco start",
+        "react-build": "craco build",
+        "build-main": "webpack --config electron/webpack.config.js",
+        "test": "craco test",
+        "pack": "electron-builder --dir",
+        "distWin": "electron-builder --win --x64"
+    },
+    "eslintConfig": {
+        "extends": "react-app"
+    },
+    "browserslist": [
+        ">0.2%",
+        "not dead",
+        "not ie <= 11",
+        "not op_mini all"
+    ],
+    "devDependencies": {
+        "@babel/core": "^7.8.3",
+        "@types/jest": "^24.9.1",
+        "@types/node": "^13.5.0",
+        "@types/react": "^16.9.19",
+        "@types/react-dom": "^16.9.5",
+        "babel-loader": "^8.0.6",
+        "concurrently": "^5.0.2",
+        "copyfiles": "^2.2.0",
+        "cross-env": "^7.0.0",
+        "electron": "^7.1.10",
+        "electron-builder": "^22.10.5",
+        "electron-devtools-installer": "^2.2.4",
+        "electron-packager": "^14.2.0",
+        "source-map-explorer": "^2.2.2",
+        "typescript": "^3.7.5",
+        "wait-on": "^4.0.0",
+        "webpack-cli": "^3.3.11"
+    },
+    "build": {
+        "appId": "tech.connordavis.dropzone",
+        "compression": "maximum",
+        "productName": "DropZone",
+        "target": "NSIS",
+        "win": {
+            "icon": "https://cdn2.iconfinder.com/data/icons/designer-skills/128/react-256.png"
+        },
+        "files": [
+            "build/**/*",
+            "node_modules/hyperswarm",
+            "node_modules/sodium-universal",
+            "node_modules/events",
+            "node_modules/ndjson",
+            "node_modules/file-saver",
+            "node_modules/uuid",
+            "node_modules/react",
+            "node_modules/react-dom",
+            "node_modules/react-scrips"
+        ],
+        "nsis": {
+            "allowToChangeInstallationDirectory": true,
+            "oneClick": false
+        }
+    }
+}
