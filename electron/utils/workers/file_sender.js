@@ -1,28 +1,28 @@
 let HyperSwarm = require('hyperswarm')
-let {EventEmitter} = require('events')
+let { EventEmitter } = require('events')
 let sodium = require('sodium-universal')
 
-let {crypto_generichash, crypto_generichash_BYTES} = sodium
+let { crypto_generichash, crypto_generichash_BYTES } = sodium
 
 let ConnectorChannel = require('../connector/ConnectorChannel')
 let ConnectorPeer = require('../connector/ConnectorPeer')
 
 let fs = require('fs')
 
-let {workerData, parentPort} = require('worker_threads')
+let { workerData, parentPort } = require('worker_threads')
 
 let createChunks = (file, fileSize, cSize) => {
-    let startPointer = 0;
-    let endPointer = fileSize;
-    let chunks = [];
+    let startPointer = 0
+    let endPointer = fileSize
+    let chunks = []
 
     while (startPointer < endPointer) {
-        let newStartPointer = startPointer + cSize;
-        chunks.push(file.slice(startPointer, newStartPointer));
-        startPointer = newStartPointer;
+        let newStartPointer = startPointer + cSize
+        chunks.push(file.slice(startPointer, newStartPointer))
+        startPointer = newStartPointer
     }
 
-    return {chunks, numberChunks: chunks.length};
+    return { chunks, numberChunks: chunks.length }
 }
 
 class DropZoneFileSender extends EventEmitter {
@@ -35,9 +35,19 @@ class DropZoneFileSender extends EventEmitter {
 
         this._swarm.once('connection', this.handleConnection)
 
-        this._channel = this.channel(
-            workerData.information.id
-        )
+        this._channel = this.channel(workerData.information.id)
+
+        this._channel.on('packet', (peer, { packet }) => {
+            switch (packet.type) {
+                case 'destroy':
+                    this._channel.closeChannel()
+                    this.destroy()
+
+                    break
+                default:
+                    break
+            }
+        })
 
         this._channel.on('peer', () => {
             this.transferFile(workerData)
@@ -45,7 +55,9 @@ class DropZoneFileSender extends EventEmitter {
     }
 
     handleConnection(connection, information) {
-        console.log('Handling Transfer Connection: ' + workerData.information.id)
+        console.log(
+            'Handling Transfer Connection: ' + workerData.information.id
+        )
 
         let peer = new ConnectorPeer(connection, information)
         this.emit('peer', peer)
@@ -80,7 +92,7 @@ class DropZoneFileSender extends EventEmitter {
     transferFile(data) {
         let {
             path,
-            information: {id, name, size, type},
+            information: { id, name, size, type },
         } = data
 
         let startTransfer = {
@@ -95,14 +107,12 @@ class DropZoneFileSender extends EventEmitter {
         this._channel.sendPacket(startTransfer)
 
         let buffer = fs.readFileSync(path)
-        let chunkSize = 1024 + 512;
-        let {chunks, numberChunks} = createChunks(buffer, size, chunkSize)
+        let chunkSize = 1024 + 512
+        let { chunks, numberChunks } = createChunks(buffer, size, chunkSize)
         let chunkNumber = 0
 
         for (let c = 0; c < numberChunks; c++) {
-            let progress = Math.round(
-                (chunkNumber / numberChunks) * 100
-            )
+            let progress = Math.round((chunkNumber / numberChunks) * 100)
 
             let chunkTransfer = {
                 type: 'chunk',

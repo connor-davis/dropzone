@@ -164,12 +164,11 @@ receiver.on('transferProgress', (packet) => {
 })
 receiver.on('transferComplete', (packet) => {
     console.log(packet)
-    // buildFile({
-    //     id: packet.id,
-    //     chunkNumber: packet.chunkNumber,
-    //     fileName: packet.name,
-    //     fileSize: packet.size,
-    // }).then((result) => {
-    //     console.log(result)
-    // })
+
+    receiver._channel.sendPacket({
+        type: 'destroy',
+    })
+
+    receiver._channel.closeChannel()
+    receiver.destroy()
 })
