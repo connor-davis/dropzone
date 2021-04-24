@@ -1,6 +1,7 @@
 {
     "name": "dropzone",
     "version": "0.1.0",
+    "description": "DropZone File Sharing. You and your friends can share files through the p2p internet. DropZone makes this possible.",
     "private": true,
     "main": "main.js",
     "homepage": "./",
@@ -9,16 +10,13 @@
         "@reduxjs/toolkit": "^1.5.0",
         "axios": "^0.21.1",
         "bootstrap": "^4.6.0",
+        "copy-files-from-to": "^3.2.0",
+        "electron-updater": "^4.3.8",
         "events": "^3.3.0",
-        "file-saver": "^2.0.5",
-        "hyperbeam": "^1.1.3",
-        "hyperdrive": "^10.20.0",
         "hyperswarm": "^2.15.3",
         "moment": "^2.29.1",
         "ndjson": "^2.0.0",
         "node-sass": "4.14.1",
-        "promise-worker": "^2.0.1",
-        "random-access-memory": "^3.1.2",
         "react": "^16.12.0",
         "react-animations": "^1.0.0",
         "react-dom": "^16.12.0",
@@ -30,26 +28,33 @@
         "redux": "^4.0.5",
         "redux-axios-middleware": "^4.0.1",
         "redux-persist": "^6.0.0",
-        "rx": "^4.1.0",
-        "rxjs-cluster": "^0.3.15",
         "sodium-universal": "^3.0.4",
-        "streamx": "^2.10.3",
         "styled-components": "^5.2.1",
         "uuid": "^8.3.2"
     },
     "scripts": {
         "analyze": "source-map-explorer 'build/static/js/*.js'",
         "start": "concurrently \"yarn react-start\" \"wait-on http://localhost:3000/ && cross-env NODE_ENV=development yarn electron-start\"",
-        "build": "yarn react-build && yarn build-main && copyfiles -f ./package/package.json build/ && copyfiles ./utils/** build/ && copyfiles ./preload.js build/ && yarn electron-build && cd dist/dropzone-win32-x64/resources/app && yarn",
-        "electron-start": "electron --experimental-worker .",
+        "build": "yarn react-build && copy-files-from-to && yarn distWin",
+        "testFiles": "copy-files-from-to",
+        "electron-start": "electron .",
         "electron-build": "electron-packager ./build --out=dist",
         "react-start": "craco start",
         "react-build": "craco build",
         "build-main": "webpack --config electron/webpack.config.js",
         "test": "craco test",
         "pack": "electron-builder --dir",
-        "distWin": "electron-builder --win --x64"
+        "distWin": "electron-builder --win --x64",
+        "gh-publish-win": "npm run build && electron-builder --win -p always"
     },
+    "repository": "git@github.com:connor-davis/dropzone.git",
+    "author": "Connor Davis <19422@kloofhigh.co.za>",
+    "copyFiles": [
+        {
+            "from": "electron/**",
+            "to": "build/"
+        }
+    ],
     "eslintConfig": {
         "extends": "react-app"
     },
@@ -65,11 +70,10 @@
         "@types/node": "^13.5.0",
         "@types/react": "^16.9.19",
         "@types/react-dom": "^16.9.5",
-        "babel-loader": "^8.0.6",
         "concurrently": "^5.0.2",
         "copyfiles": "^2.2.0",
         "cross-env": "^7.0.0",
-        "electron": "^7.1.10",
+        "electron": "^12.0.4",
         "electron-builder": "^22.10.5",
         "electron-devtools-installer": "^2.2.4",
         "electron-packager": "^14.2.0",
@@ -88,15 +92,7 @@
         },
         "files": [
             "build/**/*",
-            "node_modules/hyperswarm",
-            "node_modules/sodium-universal",
-            "node_modules/events",
-            "node_modules/ndjson",
-            "node_modules/file-saver",
-            "node_modules/uuid",
-            "node_modules/react",
-            "node_modules/react-dom",
-            "node_modules/react-scrips"
+            "node_modules/electron-updater"
         ],
         "nsis": {
             "allowToChangeInstallationDirectory": true,

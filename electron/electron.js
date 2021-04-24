@@ -1,11 +1,12 @@
 const path = require('path')
-const {app, Menu, ipcMain} = require('electron')
+const { app, Menu, ipcMain } = require('electron')
 const {
     createWindow,
     defineWindow,
     getWindow,
     closeAllWindows,
 } = require('./electronWindows')
+const { autoUpdater } = require('electron-updater')
 
 const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
 const MAIN_WINDOW_ID = 'main'
@@ -32,7 +33,7 @@ function createMainWindow() {
             nodeIntegration: true,
             nodeIntegrationInWorker: true,
             contextIsolation: false,
-            preload: path.join(app.getAppPath(), 'preload.js'),
+            preload: path.join(__dirname, 'preload.js'),
         },
         title: app.name,
     }
@@ -154,13 +155,35 @@ app.on('ready', () => {
     })
 })
 
+//--------------//
+// Auto updates //
+//--------------//
+
+autoUpdater.on('checking-for-update', () => {})
+
+autoUpdater.on('update-available', (info) => {
+    autoUpdater.downloadUpdate()
+})
+
+autoUpdater.on('update-not-available', (info) => {})
+
+autoUpdater.on('error', (err) => {})
+
+autoUpdater.on('download-progress', (progressObj) => {})
+
+autoUpdater.on('update-downloaded', (info) => {
+    setTimeout(() => {
+        autoUpdater.quitAndInstall()
+    }, 500)
+})
+
 ipcMain.on('connectDropZone', (event, channel) => {
     dropzone = new DropZone({
         channel,
         swarm: HyperSwarm(),
     })
 
-    dropzone._channel.on('packet', (channelPeer, {packet}) => {
+    dropzone._channel.on('packet', (channelPeer, { packet }) => {
         switch (packet.type) {
             case 'transferStarted':
                 console.log('Transfer Started: ', packet)

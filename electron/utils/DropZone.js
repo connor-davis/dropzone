@@ -1,61 +1,16 @@
 const HyperSwarm = require('hyperswarm')
-const HyperBeam = require('hyperbeam')
-const {EventEmitter} = require('events')
+const { EventEmitter } = require('events')
 const sodium = require('sodium-universal')
 
-const {crypto_generichash, crypto_generichash_BYTES} = sodium
+const { crypto_generichash, crypto_generichash_BYTES } = sodium
 
 const ConnectorChannel = require('./connector/ConnectorChannel')
 const ConnectorPeer = require('./connector/ConnectorPeer')
 
+let DropZoneFileSender = require('./workers/DropZoneFileSender')
+let DropZoneFileReceiver = require('./workers/DropZoneFileReceiver')
+
 let uuid = require('uuid')
-
-const {Worker} = require('worker_threads')
-
-function sendFile(data) {
-    return new Promise((resolve, reject) => {
-        let worker = new Worker(__dirname + '/workers/file_sender.js', {
-            workerData: data,
-        })
-
-        worker.on('message', resolve)
-        worker.on('error', reject)
-        worker.on('exit', (code) => {
-            if (code !== 0)
-                reject(new Error(`Worker stopped with exit code ${code}`))
-        })
-    })
-}
-
-function receiveFile(data) {
-    return new Promise((resolve, reject) => {
-        let worker = new Worker(__dirname + '/workers/file_receiver.js', {
-            workerData: data,
-        })
-
-        worker.on('message', resolve)
-        worker.on('error', reject)
-        worker.on('exit', (code) => {
-            if (code !== 0)
-                reject(new Error(`Worker stopped with exit code ${code}`))
-        })
-    })
-}
-
-function buildFile(data) {
-    return new Promise((resolve, reject) => {
-        let worker = new Worker(__dirname + '/workers/file_builder.js', {
-            workerData: data,
-        })
-
-        worker.on('message', resolve)
-        worker.on('error', reject)
-        worker.on('exit', (code) => {
-            if (code !== 0)
-                reject(new Error(`Worker stopped with exit code ${code}`))
-        })
-    })
-}
 
 class DropZone extends EventEmitter {
     constructor(options = {}) {
@@ -69,54 +24,10 @@ class DropZone extends EventEmitter {
 
         this._channel = this.channel(options.channel || 'dropzone')
 
-        this._channel.on('packet', (peer, {packet}) => {
-            switch (packet.type) {
-                case 'transferStarted':
-                    receiveFile(packet).then((pack) => {
-                        console.log(pack)
-
-                        // switch (pack.type) {
-                        //     case 'transferStarted':
-                        //         this.emit('transferStarted', pack)
-                        //         break
-                        //     case 'transferProgress':
-                        //         this.emit('transferProgress', pack)
-                        //         break
-                        //     case 'transferComplete':
-                        //         this.emit('transferComplete', pack)
-                        //
-                        //         buildFile({
-                        //             id: pack.id,
-                        //             chunkNumber: pack.chunkNumber,
-                        //             fileName: pack.fileName,
-                        //             fileSize: pack.fileSize,
-                        //         }).then((processor) => {
-                        //             switch (processor.type) {
-                        //                 case 'processingStarted':
-                        //                     this.emit('processingStarted', {
-                        //                         id: processor.id,
-                        //                         name: processor.name
-                        //                     })
-                        //                     break
-                        //                 case 'processingProgress':
-                        //                     this.emit('processingProgress', {
-                        //                         id: processor.id,
-                        //                         progress: processor.progress
-                        //                     })
-                        //                     break
-                        //                 case 'processingComplete':
-                        //                     this.emit('processingComplete', {
-                        //                         id: processor.id,
-                        //                         path: processor.path
-                        //                     })
-                        //                     break
-                        //             }
-                        //         })
-                        //         break
-                        //     default:
-                        //         break
-                        // }
-                    })
+        this._channel.on('packet', (peer, { packet: { type, id } }) => {
+            switch (type) {
+                case 'transferRequest':
+                    let receiver = new DropZoneFileReceiver({ id })
                     break
                 default:
                     break
@@ -135,7 +46,6 @@ class DropZone extends EventEmitter {
         let channelKey = Buffer.alloc(crypto_generichash_BYTES)
 
         crypto_generichash(channelKey, Buffer.from(channelName))
-
 
         let channelKeyString = channelKey.toString('hex')
         let channel = new ConnectorChannel(this, channelKeyString, channelName)
@@ -158,40 +68,21 @@ class DropZone extends EventEmitter {
         this.emit('destroyed')
     }
 
-    transferFile({path, information}) {
+    transferFile({ path, information: { name, type, size } }) {
         let id = uuid.v4()
 
-        let startTransfer = {
-            type: 'transferStarted',
+        let transferRequest = {
+            type: 'transferRequest',
             id,
             path,
-            fileName: information.name,
-            fileType: information.type,
-            fileSize: information.size,
+            fileName: name,
+            fileType: type,
+            fileSize: size,
         }
 
-        this._channel.sendPacket(startTransfer)
+        this._channel.sendPacket(transferRequest)
 
-        sendFile({
-            path,
-            information: {
-                id,
-                name: information.name,
-                type: information.type,
-                size: information.size,
-            },
-        })
-    }
-
-    saveFile({information}) {
-        buildFile({
-            id: information.id,
-            chunkNumber: information.chunkNumber,
-            fileName: information.fileName,
-            fileSize: information.fileSize,
-        }).then((path) => {
-            this.emit('filePath', path)
-        })
+        let sender = new DropZoneFileSender({ id, path, name, type, size })
     }
 }
 
