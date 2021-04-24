@@ -1,4 +1,4 @@
-let {ipcRenderer} = require('electron')
+let { ipcRenderer } = require('electron')
 
 window.joinChannel = (channel) => {
     ipcRenderer.send('connectDropZone', channel)

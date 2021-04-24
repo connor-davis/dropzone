@@ -1,8 +1,12 @@
-import {Button, Card, CardBody, CardFooter, Col, Input, Row} from 'reactstrap'
-import React, {useEffect, useState} from 'react'
-import {getDiscoveryChannel, setDiscoveryChannel,} from './app/slices/discoveryChannel'
-import {useDispatch, useSelector} from 'react-redux'
-import {useDropzone} from 'react-dropzone'
+import { Button, Card, CardBody, CardFooter, Col, Input, Row } from 'reactstrap'
+import React, { useEffect, useState } from 'react'
+import {
+    getDiscoveryChannel,
+    setDiscoveryChannel,
+} from './app/slices/discoveryChannel'
+import { useDispatch, useSelector } from 'react-redux'
+
+import { useDropzone } from 'react-dropzone'
 
 const App = () => {
     const dispatch = useDispatch()
@@ -21,10 +25,10 @@ const App = () => {
 
     const [filePaths, setFilePaths] = useState([])
 
-    const {getRootProps, getInputProps} = useDropzone({
+    const { getRootProps, getInputProps } = useDropzone({
         onDrop: (acceptedFiles) => {
-            acceptedFiles.forEach(({path, name, size, type}) =>
-                window.uploadFile({path, information: {name, size, type}})
+            acceptedFiles.forEach(({ path, name, size, type }) =>
+                window.uploadFile({ path, information: { name, size, type } })
             )
         },
     })
@@ -33,12 +37,7 @@ const App = () => {
         window.joinedChannel(dispatch, setDiscoveryChannel)
         window.receiveMessages(setMessages)
 
-        window.on('transferStarted', console.log)
-        window.on('transferProgress', console.log)
-        window.on('transferComplete', console.log)
-        window.on('processingStarted', console.log)
-        window.on('processingProgress', console.log)
-        window.on('processingComplete', console.log)
+        window.on('transferRequest', (packet) => {})
     }, [])
 
     const connectChannel = (channelName) => {
@@ -150,7 +149,7 @@ const App = () => {
                                     height: '100vh',
                                 }}
                             >
-                                <input {...getInputProps()} id="fileToShare"/>
+                                <input {...getInputProps()} id="fileToShare" />
                                 <div>Drag and Drop your files here.</div>
                             </div>
                         </Col>
@@ -166,8 +165,8 @@ const App = () => {
                                     {messages.map((message) => (
                                         <div className="text-primary mb-1">
                                             {message.sender +
-                                            ' > ' +
-                                            message.content}
+                                                ' > ' +
+                                                message.content}
                                         </div>
                                     ))}
                                 </CardBody>
@@ -184,7 +183,7 @@ const App = () => {
                                             className="rounded mr-2"
                                             type="text"
                                             value={message}
-                                            onChange={({target: {value}}) =>
+                                            onChange={({ target: { value } }) =>
                                                 setMessage(value)
                                             }
                                             placeholder="Message"
@@ -223,7 +222,7 @@ const App = () => {
                                         className="rounded mb-2"
                                         type="text"
                                         value={nickname}
-                                        onChange={({target: {value}}) =>
+                                        onChange={({ target: { value } }) =>
                                             setNickName(value)
                                         }
                                         placeholder="Nickname"
@@ -240,7 +239,7 @@ const App = () => {
                                             className="rounded mr-2"
                                             type="text"
                                             value={channel}
-                                            onChange={({target: {value}}) =>
+                                            onChange={({ target: { value } }) =>
                                                 setChannel(value)
                                             }
                                             placeholder="Key (e.g. dropzone-alpha)"

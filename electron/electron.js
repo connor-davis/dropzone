@@ -183,6 +183,8 @@ ipcMain.on('connectDropZone', (event, channel) => {
         swarm: HyperSwarm(),
     })
 
+    dropzone.on('alert', (message) => event.sender.send('alert', message))
+
     dropzone._channel.on('packet', (channelPeer, { packet }) => {
         switch (packet.type) {
             case 'transferStarted':
@@ -197,37 +199,12 @@ ipcMain.on('connectDropZone', (event, channel) => {
                 event.sender.send('messagePacket', packet)
                 break
             default:
-                console.log('Unknown packet: ', packet)
                 break
         }
     })
 
     dropzone._channel.on('disconnected', () => {
         console.log('Peer has disconnected')
-    })
-
-    dropzone.on('transferStarted', (packet) => {
-        event.sender.send('transferStarted', packet)
-    })
-
-    dropzone.on('transferProgress', (packet) => {
-        event.sender.send('transferProgress', packet)
-    })
-
-    dropzone.on('transferComplete', (packet) => {
-        event.sender.send('transferComplete', packet)
-    })
-
-    dropzone.on('processingStarted', (packet) => {
-        event.sender.send('processingStarted', packet)
-    })
-
-    dropzone.on('processingProgress', (packet) => {
-        event.sender.send('processingProgress', packet)
-    })
-
-    dropzone.on('processingComplete', (packet) => {
-        event.sender.send('processingComplete', packet)
     })
 
     event.sender.send('joinedChannel', channel)

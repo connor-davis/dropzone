@@ -9,6 +9,8 @@ let ConnectorPeer = require('../connector/ConnectorPeer')
 
 let fs = require('fs')
 
+let { workerData, parentPort } = require('worker_threads')
+
 let createChunks = (file, fileSize, cSize) => {
     let startPointer = 0
     let endPointer = fileSize
@@ -23,39 +25,27 @@ let createChunks = (file, fileSize, cSize) => {
     return { chunks, numberChunks: chunks.length }
 }
 
-module.exports = class DropZoneFileSender extends EventEmitter {
+class DropZoneFileSender extends EventEmitter {
     constructor(options = {}) {
         super()
 
-        this._swarm = options.swarm || HyperSwarm()
-
-        this.senderID = options.id
+        this._swarm = options.swarm || HyperSwarm(options)
 
         this.handleConnection = this.handleConnection.bind(this)
 
         this._swarm.once('connection', this.handleConnection)
 
-        this._channel = this.channel(this.senderID)
-
-        this._channel.on('packet', (peer, { packet }) => {
-            switch (packet.type) {
-                case 'destroy':
-                    this._channel.closeChannel()
-                    this.destroy()
-
-                    break
-                default:
-                    break
-            }
-        })
+        this._channel = this.channel(workerData.information.id)
 
         this._channel.on('peer', () => {
-            this.transferFile(options)
+            this.transferFile(workerData)
         })
     }
 
     handleConnection(connection, information) {
-        console.log('Handling Transfer Connection: ' + this.senderID)
+        console.log(
+            'Handling Transfer Connection: ' + workerData.information.id
+        )
 
         let peer = new ConnectorPeer(connection, information)
         this.emit('peer', peer)
@@ -88,7 +78,10 @@ module.exports = class DropZoneFileSender extends EventEmitter {
     }
 
     transferFile(data) {
-        let { path, id, name, size, type } = data
+        let {
+            path,
+            information: { id, name, size, type },
+        } = data
 
         let startTransfer = {
             type: 'transferStarted',
@@ -139,3 +132,5 @@ module.exports = class DropZoneFileSender extends EventEmitter {
         this._channel.sendPacket(transferComplete)
     }
 }
+
+let sender = new DropZoneFileSender()
