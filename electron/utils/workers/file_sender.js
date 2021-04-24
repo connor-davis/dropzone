@@ -1,31 +1,42 @@
 let HyperSwarm = require('hyperswarm')
-let { EventEmitter } = require('events')
+let {EventEmitter} = require('events')
 let sodium = require('sodium-universal')
 
-let { crypto_generichash, crypto_generichash_BYTES } = sodium
+let {crypto_generichash, crypto_generichash_BYTES} = sodium
 
 let ConnectorChannel = require('../connector/ConnectorChannel')
 let ConnectorPeer = require('../connector/ConnectorPeer')
 
 let fs = require('fs')
-let path = require('path')
-let uuid = require('uuid')
 
-let { workerData, parentPort } = require('worker_threads')
+let {workerData, parentPort} = require('worker_threads')
+
+let createChunks = (file, fileSize, cSize) => {
+    let startPointer = 0;
+    let endPointer = fileSize;
+    let chunks = [];
+
+    while (startPointer < endPointer) {
+        let newStartPointer = startPointer + cSize;
+        chunks.push(file.slice(startPointer, newStartPointer));
+        startPointer = newStartPointer;
+    }
+
+    return {chunks, numberChunks: chunks.length};
+}
 
 class DropZoneFileSender extends EventEmitter {
     constructor(options = {}) {
         super()
 
         this._swarm = options.swarm || HyperSwarm(options)
-        this._connectionChannels = new Set()
 
         this.handleConnection = this.handleConnection.bind(this)
 
         this._swarm.once('connection', this.handleConnection)
 
         this._channel = this.channel(
-            options.channel + '-transfer' || 'dropzone-transfer'
+            workerData.information.id
         )
 
         this._channel.on('peer', () => {
@@ -34,7 +45,7 @@ class DropZoneFileSender extends EventEmitter {
     }
 
     handleConnection(connection, information) {
-        console.log('Handling Transfer Receiver Connection')
+        console.log('Handling Transfer Receiver Connection: ' + workerData.information.id)
 
         let peer = new ConnectorPeer(connection, information)
         this.emit('peer', peer)
@@ -69,7 +80,7 @@ class DropZoneFileSender extends EventEmitter {
     transferFile(data) {
         let {
             path,
-            information: { id, name, size, type },
+            information: {id, name, size, type},
         } = data
 
         let startTransfer = {
@@ -83,60 +94,45 @@ class DropZoneFileSender extends EventEmitter {
 
         this._channel.sendPacket(startTransfer)
 
-        console.log('Transfer has started: ', data)
-
         let buffer = fs.readFileSync(path)
-        let parts = Uint8Array.from(buffer)
+        let chunkSize = 1024 + 512;
+        let {chunks, numberChunks} = createChunks(buffer, size, chunkSize)
+        let chunkNumber = 0
 
-        function chunks(arr, len) {
-            let chunks = [],
-                i = 0,
-                n = arr.length
+        for (let c = 0; c < numberChunks; c++) {
+            let progress = Math.round(
+                (chunkNumber / numberChunks) * 100
+            )
 
-            while (i < n) {
-                chunks.push(arr.slice(i, (i += len)))
+            let chunkTransfer = {
+                type: 'chunk',
+                id,
+                chunk: chunks[c],
+                chunkNumber,
+                numberChunks,
+                fileName: name,
+                fileSize: size,
+                progress,
             }
 
-            return chunks
+            this._channel.sendPacket(chunkTransfer)
+
+            chunkNumber++
         }
 
-        let shareChunks = chunks(parts, 128)
-        let shareChunksSize = shareChunks.length
-        let sentShareChunks = 0
+        let transferComplete = {
+            type: 'transferComplete ',
+            id,
+            path,
+            chunkNumber,
+            numberChunks,
+            fileName: name,
+            fileType: type,
+            fileSize: size,
+        }
 
-        shareChunks.forEach((chunk) => {
-            if (sentShareChunks === shareChunksSize - 1) {
-                let transferComplete = {
-                    type: 'transferComplete',
-                    id,
-                    fileName: name,
-                    fileSize: size,
-                    fileType: type,
-                }
-
-                this._channel.sendPacket(transferComplete)
-
-                console.log('Transfer has finished: ', data)
-
-                sentShareChunks = 0
-            } else {
-                let progress = Math.round(
-                    (sentShareChunks / shareChunksSize) * 100
-                )
-
-                let chunkTransfer = {
-                    type: 'chunk',
-                    id,
-                    chunk,
-                    progress,
-                }
-
-                this._channel.sendPacket(chunkTransfer)
-
-                sentShareChunks++
-            }
-        })
+        this._channel.sendPacket(transferComplete)
     }
 }
 
-new DropZoneFileSender()
+let sender = new DropZoneFileSender()

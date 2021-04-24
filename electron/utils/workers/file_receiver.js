@@ -1,90 +1,89 @@
 let HyperSwarm = require('hyperswarm')
-let { EventEmitter } = require('events')
+let {EventEmitter} = require('events')
 let sodium = require('sodium-universal')
 
-let { crypto_generichash, crypto_generichash_BYTES } = sodium
+let {crypto_generichash, crypto_generichash_BYTES} = sodium
 
 let ConnectorChannel = require('../connector/ConnectorChannel')
 let ConnectorPeer = require('../connector/ConnectorPeer')
 
 let fs = require('fs')
 let path = require('path')
-let uuid = require('uuid')
 
-let { workerData, parentPort } = require('worker_threads')
+let {workerData, parentPort, Worker} = require('worker_threads')
+
+function buildFile(data) {
+    return new Promise((resolve, reject) => {
+        let worker = new Worker(__dirname + '/file_builder.js', {
+            workerData: data,
+        })
+
+        worker.on('message', resolve)
+        worker.on('error', reject)
+        worker.on('exit', (code) => {
+            if (code !== 0)
+                reject(new Error(`Worker stopped with exit code ${code}`))
+        })
+    })
+}
 
 class DropZoneFileReceiver extends EventEmitter {
     constructor(options = {}) {
         super()
 
         this._swarm = options.swarm || HyperSwarm(options)
-        this._connectionChannels = new Set()
 
         this.handleConnection = this.handleConnection.bind(this)
 
         this._swarm.once('connection', this.handleConnection)
 
         this._channel = this.channel(
-            options.channel + '-transfer' || 'dropzone-transfer'
+            workerData.id
         )
 
-        this._channel.on('packet', (peer, { packet }) => {
+        this._channel.on('packet', (peer, {packet}) => {
             switch (packet.type) {
                 case 'transferStarted':
-                    console.log('Transfer has started: ', packet)
-
-                    if (!fs.existsSync(path.join(__dirname, 'temp'))) {
-                        fs.mkdirSync(path.join(__dirname, 'temp'))
+                    if (!fs.existsSync(path.join(__dirname, 'temp', packet.id))) {
+                        fs.mkdirSync(path.join(__dirname, 'temp', packet.id))
                     }
 
-                    if (!fs.existsSync(path.join(__dirname, 'complete'))) {
-                        fs.mkdirSync(path.join(__dirname, 'complete'))
+                    if (!fs.existsSync(path.join(__dirname, 'complete', packet.id))) {
+                        fs.mkdirSync(path.join(__dirname, 'complete', packet.id))
                     }
 
-                    fs.writeFileSync(
-                        path.join(__dirname, 'temp', `${packet.id}.drop`),
-                        ''
-                    )
+                    this.emit('transferStarted', {
+                        type: 'transferStarted',
+                        id: packet.id,
+                        name: packet.fileName,
+                        progress: 0
+                    })
 
                     break
 
                 case 'chunk':
-                    if (
-                        !fs.existsSync(
-                            path.join(__dirname, 'temp', `${packet.id}.drop`)
-                        )
-                    ) {
-                        fs.writeFileSync(
-                            path.join(__dirname, 'temp', `${packet.id}.drop`),
-                            ''
-                        )
+                    this.emit('transferProgress', {
+                        type: 'transferProgress',
+                        id: packet.id,
+                        name: packet.fileName,
+                        progress: packet.progress
+                    })
+
+                    if (packet.chunkNumber + 1 !== packet.numberChunks) {
+                        fs.writeFileSync(path.join(__dirname, 'temp', packet.id, `part-${packet.chunkNumber}.droplet`), JSON.stringify(packet.chunk))
+                    } else {
+                        fs.writeFileSync(path.join(__dirname, 'temp', packet.id, `part-${packet.chunkNumber}.droplet`), JSON.stringify(packet.chunk))
+
+                        this.emit('transferComplete', {
+                            type: 'transferComplete',
+                            id: packet.id,
+                            name: packet.fileName,
+                            chunkNumber: packet.chunkNumber,
+                            size: packet.fileSize
+                        })
                     }
-                    for (let k in packet.chunk)
-                        fs.appendFileSync(
-                            path.join(__dirname, 'temp', `${packet.id}.drop`),
-                            packet.chunk[k] + ','
-                        )
-                    break
-
-                case 'transferComplete':
-                    console.log('Transfer has finished: ', packet)
-
-                    // let buffer = fs.readFileSync(
-                    //     path.join(__dirname, 'temp', `${packet.id}.drop`),
-                    //     { encoding: 'utf8' }
-                    // )
-
-                    // let parts = Uint8Array.from(buffer.split(','))
-                    // let file = new Blob([parts], { type: packet.fileType })
-
-                    // fs.writeFileSync(
-                    //     path.join(__dirname, 'complete', packet.fileName),
-                    //     file,
-                    //     { encoding: 'utf8' }
-                    // )
 
                     break
-
                 default:
                     break
             }
@@ -92,7 +91,7 @@ class DropZoneFileReceiver extends EventEmitter {
     }
 
     handleConnection(connection, information) {
-        console.log('Handling Transfer Sender Connection')
+        console.log('Handling Transfer Sender Connection: ' + workerData.id)
 
         let peer = new ConnectorPeer(connection, information)
         this.emit('peer', peer)
@@ -125,4 +124,21 @@ class DropZoneFileReceiver extends EventEmitter {
     }
 }
 
-new DropZoneFileReceiver()
+let receiver = new DropZoneFileReceiver()
+
+receiver.on('transferStarted', (packet) => {
+    parentPort.postMessage(packet)
+})
+receiver.on('transferProgress', (packet) => {
+    parentPort.postMessage(packet)
+})
+receiver.on('transferComplete', (packet) => {
+    buildFile({
+        id: packet.id,
+        chunkNumber: packet.chunkNumber,
+        fileName: packet.name,
+        fileSize: packet.size,
+    }).then((result) => {
+        console.log(result)
+    })
+})

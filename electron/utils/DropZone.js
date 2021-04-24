@@ -1,17 +1,16 @@
 const HyperSwarm = require('hyperswarm')
-const { EventEmitter } = require('events')
+const HyperBeam = require('hyperbeam')
+const {EventEmitter} = require('events')
 const sodium = require('sodium-universal')
 
-const { crypto_generichash, crypto_generichash_BYTES } = sodium
+const {crypto_generichash, crypto_generichash_BYTES} = sodium
 
 const ConnectorChannel = require('./connector/ConnectorChannel')
 const ConnectorPeer = require('./connector/ConnectorPeer')
 
-let fs = require('fs')
-let path = require('path')
 let uuid = require('uuid')
 
-const { Worker } = require('worker_threads')
+const {Worker} = require('worker_threads')
 
 function sendFile(data) {
     return new Promise((resolve, reject) => {
@@ -43,12 +42,26 @@ function receiveFile(data) {
     })
 }
 
+function buildFile(data) {
+    return new Promise((resolve, reject) => {
+        let worker = new Worker(__dirname + '/workers/file_builder.js', {
+            workerData: data,
+        })
+
+        worker.on('message', resolve)
+        worker.on('error', reject)
+        worker.on('exit', (code) => {
+            if (code !== 0)
+                reject(new Error(`Worker stopped with exit code ${code}`))
+        })
+    })
+}
+
 class DropZone extends EventEmitter {
     constructor(options = {}) {
         super()
 
         this._swarm = options.swarm || HyperSwarm(options)
-        this._connectionChannels = new Set()
 
         this.handleConnection = this.handleConnection.bind(this)
 
@@ -56,11 +69,53 @@ class DropZone extends EventEmitter {
 
         this._channel = this.channel(options.channel || 'dropzone')
 
-        this._channel.on('packet', (peer, { packet }) => {
+        this._channel.on('packet', (peer, {packet}) => {
             switch (packet.type) {
                 case 'transferStarted':
-                    receiveFile(packet).then((packet) => {
-                        console.log(packet)
+                    receiveFile(packet).then((pack) => {
+                        console.log(pack)
+
+                        // switch (pack.type) {
+                        //     case 'transferStarted':
+                        //         this.emit('transferStarted', pack)
+                        //         break
+                        //     case 'transferProgress':
+                        //         this.emit('transferProgress', pack)
+                        //         break
+                        //     case 'transferComplete':
+                        //         this.emit('transferComplete', pack)
+                        //
+                        //         buildFile({
+                        //             id: pack.id,
+                        //             chunkNumber: pack.chunkNumber,
+                        //             fileName: pack.fileName,
+                        //             fileSize: pack.fileSize,
+                        //         }).then((processor) => {
+                        //             switch (processor.type) {
+                        //                 case 'processingStarted':
+                        //                     this.emit('processingStarted', {
+                        //                         id: processor.id,
+                        //                         name: processor.name
+                        //                     })
+                        //                     break
+                        //                 case 'processingProgress':
+                        //                     this.emit('processingProgress', {
+                        //                         id: processor.id,
+                        //                         progress: processor.progress
+                        //                     })
+                        //                     break
+                        //                 case 'processingComplete':
+                        //                     this.emit('processingComplete', {
+                        //                         id: processor.id,
+                        //                         path: processor.path
+                        //                     })
+                        //                     break
+                        //             }
+                        //         })
+                        //         break
+                        //     default:
+                        //         break
+                        // }
                     })
                     break
                 default:
@@ -80,6 +135,7 @@ class DropZone extends EventEmitter {
         let channelKey = Buffer.alloc(crypto_generichash_BYTES)
 
         crypto_generichash(channelKey, Buffer.from(channelName))
+
 
         let channelKeyString = channelKey.toString('hex')
         let channel = new ConnectorChannel(this, channelKeyString, channelName)
@@ -102,7 +158,7 @@ class DropZone extends EventEmitter {
         this.emit('destroyed')
     }
 
-    transferFile({ path, information }) {
+    transferFile({path, information}) {
         let id = uuid.v4()
 
         let startTransfer = {
@@ -124,6 +180,17 @@ class DropZone extends EventEmitter {
                 type: information.type,
                 size: information.size,
             },
+        })
+    }
+
+    saveFile({information}) {
+        buildFile({
+            id: information.id,
+            chunkNumber: information.chunkNumber,
+            fileName: information.fileName,
+            fileSize: information.fileSize,
+        }).then((path) => {
+            this.emit('filePath', path)
         })
     }
 }

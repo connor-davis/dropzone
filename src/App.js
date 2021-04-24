@@ -1,10 +1,8 @@
-import {Button, Card, CardBody, CardFooter, Col, Input, Row,} from 'reactstrap'
+import {Button, Card, CardBody, CardFooter, Col, Input, Row} from 'reactstrap'
 import React, {useEffect, useState} from 'react'
 import {getDiscoveryChannel, setDiscoveryChannel,} from './app/slices/discoveryChannel'
-import {setConnected} from './app/slices/connection'
 import {useDispatch, useSelector} from 'react-redux'
 import {useDropzone} from 'react-dropzone'
-import {saveAs} from 'file-saver'
 
 const App = () => {
     const dispatch = useDispatch()
@@ -21,65 +19,30 @@ const App = () => {
     const [activeDownloads, setActiveDownloads] = useState([])
     const [completeDownloads, setCompleteDownloads] = useState([])
 
-    const {getRootProps, getInputProps} = useDropzone()
+    const [filePaths, setFilePaths] = useState([])
+
+    const {getRootProps, getInputProps} = useDropzone({
+        onDrop: (acceptedFiles) => {
+            acceptedFiles.forEach(({path, name, size, type}) =>
+                window.uploadFile({path, information: {name, size, type}})
+            )
+        },
+    })
 
     useEffect(() => {
-        if (discoveryChannel) {
-            discoveryChannel.on('packet', (channelPeer, {packet}) => {
-                switch (packet.type) {
-                    case 'message':
-                        setMessages((messages) => [...messages, packet])
-                        break
-                    default:
-                        console.log(packet)
-                        break
-                }
-            })
+        window.joinedChannel(dispatch, setDiscoveryChannel)
+        window.receiveMessages(setMessages)
 
-            discoveryChannel.on('disconnected', () => {
-                console.log("Peer has disconnected")
-            })
-        }
-    }, [discoveryChannel])
-
-    useEffect(() => {
-        if (downloadManager) {
-            downloadManager.on('shareStart', (packet) => {
-                setActiveDownloads((old) => [...old, packet])
-            })
-
-            downloadManager.on('downloadProgress', (packet) => {
-                setActiveDownloads((old) => [...old.map((o) => {
-                    if (o.id === packet.id) return {...o, ...packet}
-                    return o
-                })])
-            })
-
-            downloadManager.on('downloadComplete', (packet) => {
-                setActiveDownloads((activeDownloads.filter((download) => download.id !== packet.id)))
-                setCompleteDownloads((old) => [...old, packet])
-            });
-        }
-    }, [downloadManager])
+        window.on('transferStarted', console.log)
+        window.on('transferProgress', console.log)
+        window.on('transferComplete', console.log)
+        window.on('processingStarted', console.log)
+        window.on('processingProgress', console.log)
+        window.on('processingComplete', console.log)
+    }, [])
 
     const connectChannel = (channelName) => {
-        if (discoveryChannel !== undefined) {
-            discoveryChannel.closeChannel()
-            downloadManager.downloadChannel.closeChannel()
-
-            window.connector.destroy(() => {
-                dispatch(
-                    setDiscoveryChannel(
-                        window.initializeConnector().channel(channelName)
-                    )
-                )
-
-                setDownloadManager(new window.DownloadManager(channelName))
-            })
-        } else {
-            dispatch(setDiscoveryChannel(window.connector.channel(channelName)))
-            setDownloadManager(new window.DownloadManager(channelName))
-        }
+        window.joinChannel(channelName)
     }
 
     const sendMessage = (message) => {
@@ -88,32 +51,39 @@ const App = () => {
             sender: nickname,
             content: message,
         }
-        discoveryChannel.sendPacket(messagePacket)
+        window.sendMessage(messagePacket)
         setMessages((old) => [...old, messagePacket])
         setMessage('')
     }
 
-    const sendFile = async () => {
-        let file = document.getElementById('fileToShare').files[0]
-
-        await downloadManager.shareFile(channel, file)
-    }
-
     let RenderActiveDownloads = () => {
-        return activeDownloads.map((download) => <div className="text-primary mb-1">
-            {download.fileName + ' - ' + (download.progress ? download.progress : 0) + '%'}
-        </div>)
+        // return activeDownloads.map((download) => (
+        //     <div className="text-primary mb-1">
+        //         {download.fileName +
+        //         ' - ' +
+        //         (download.progress ? download.progress : 0) +
+        //         '%'}
+        //     </div>
+        // ))
     }
 
     let RenderCompleteDownloads = () => {
-        return completeDownloads.map((download) => <div className="text-primary mb-1" onClick={() => {
-            let parts = Uint8Array.from(download.chunks)
-            let file = new Blob([parts], {type: download.fileType})
-
-            saveAs(file, download.fileName)
-        }}>
-            {download.fileName + ' - ' + (download.progress ? download.progress : 100) + '%'}
-        </div>)
+        // return completeDownloads.map((download) => (
+        //     <div
+        //         className="text-primary mb-1"
+        //         onClick={() => {
+        //             let parts = Uint8Array.from(download.chunks)
+        //             let file = new Blob([parts], {type: download.fileType})
+        //
+        //             saveAs(file, download.fileName)
+        //         }}
+        //     >
+        //         {download.fileName +
+        //         ' - ' +
+        //         (download.progress ? download.progress : 100) +
+        //         '%'}
+        //     </div>
+        // ))
     }
 
     return (
@@ -145,12 +115,12 @@ const App = () => {
                                 <CardBody>
                                     <CardFooter>Active Downloads</CardFooter>
                                     <CardBody>
-                                        <RenderActiveDownloads/>
+                                        {/*<RenderActiveDownloads/>*/}
                                     </CardBody>
 
                                     <CardFooter>Complete Downloads</CardFooter>
                                     <CardBody>
-                                        <RenderCompleteDownloads/>
+                                        {/*<RenderCompleteDownloads/>*/}
                                     </CardBody>
                                 </CardBody>
                                 <CardFooter>
@@ -180,11 +150,7 @@ const App = () => {
                                     height: '100vh',
                                 }}
                             >
-                                <input
-                                    {...getInputProps()}
-                                    id="fileToShare"
-                                    onChange={() => sendFile()}
-                                />
+                                <input {...getInputProps()} id="fileToShare"/>
                                 <div>Drag and Drop your files here.</div>
                             </div>
                         </Col>
@@ -218,9 +184,9 @@ const App = () => {
                                             className="rounded mr-2"
                                             type="text"
                                             value={message}
-                                            onChange={({
-                                                           target: {value},
-                                                       }) => setMessage(value)}
+                                            onChange={({target: {value}}) =>
+                                                setMessage(value)
+                                            }
                                             placeholder="Message"
                                             style={{
                                                 width: '200px',
@@ -229,9 +195,7 @@ const App = () => {
                                         <Button
                                             color="primary"
                                             outline
-                                            onClick={() =>
-                                                sendMessage(message)
-                                            }
+                                            onClick={() => sendMessage(message)}
                                         >
                                             Send
                                         </Button>
