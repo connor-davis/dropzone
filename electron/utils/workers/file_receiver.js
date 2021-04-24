@@ -1,8 +1,8 @@
 let HyperSwarm = require('hyperswarm')
-let {EventEmitter} = require('events')
+let { EventEmitter } = require('events')
 let sodium = require('sodium-universal')
 
-let {crypto_generichash, crypto_generichash_BYTES} = sodium
+let { crypto_generichash, crypto_generichash_BYTES } = sodium
 
 let ConnectorChannel = require('../connector/ConnectorChannel')
 let ConnectorPeer = require('../connector/ConnectorPeer')
@@ -10,7 +10,7 @@ let ConnectorPeer = require('../connector/ConnectorPeer')
 let fs = require('fs')
 let path = require('path')
 
-let {workerData, parentPort, Worker} = require('worker_threads')
+let { workerData, parentPort, Worker } = require('worker_threads')
 
 function buildFile(data) {
     return new Promise((resolve, reject) => {
@@ -37,26 +37,40 @@ class DropZoneFileReceiver extends EventEmitter {
 
         this._swarm.once('connection', this.handleConnection)
 
-        this._channel = this.channel(
-            workerData.id
-        )
+        this._channel = this.channel(workerData.id)
 
-        this._channel.on('packet', (peer, {packet}) => {
+        this._channel.on('packet', (peer, { packet }) => {
             switch (packet.type) {
                 case 'transferStarted':
-                    if (!fs.existsSync(path.join(__dirname, 'temp', packet.id))) {
-                        fs.mkdirSync(path.join(__dirname, 'temp', packet.id))
+                    if (!fs.existsSync(path.join(process.cwd(), 'tempFiles'))) {
+                        fs.mkdirSync(path.join(process.cwd(), 'tempFiles'))
                     }
 
-                    if (!fs.existsSync(path.join(__dirname, 'complete', packet.id))) {
-                        fs.mkdirSync(path.join(__dirname, 'complete', packet.id))
+                    if (
+                        !fs.existsSync(
+                            path.join(process.cwd(), 'tempFiles', packet.id)
+                        )
+                    ) {
+                        fs.mkdirSync(
+                            path.join(process.cwd(), 'tempFiles', packet.id)
+                        )
                     }
+
+                    fs.writeFileSync(
+                        path.join(
+                            process.cwd(),
+                            'tempFiles',
+                            packet.id,
+                            packet.fileName
+                        ),
+                        ''
+                    )
 
                     this.emit('transferStarted', {
                         type: 'transferStarted',
                         id: packet.id,
                         name: packet.fileName,
-                        progress: 0
+                        progress: 0,
                     })
 
                     break
@@ -66,20 +80,36 @@ class DropZoneFileReceiver extends EventEmitter {
                         type: 'transferProgress',
                         id: packet.id,
                         name: packet.fileName,
-                        progress: packet.progress
+                        progress: packet.progress,
                     })
 
                     if (packet.chunkNumber + 1 !== packet.numberChunks) {
-                        fs.writeFileSync(path.join(__dirname, 'temp', packet.id, `part-${packet.chunkNumber}.droplet`), JSON.stringify(packet.chunk))
+                        fs.appendFileSync(
+                            path.join(
+                                process.cwd(),
+                                'tempFiles',
+                                packet.id,
+                                packet.fileName
+                            ),
+                            Buffer.from(packet.chunk.data)
+                        )
                     } else {
-                        fs.writeFileSync(path.join(__dirname, 'temp', packet.id, `part-${packet.chunkNumber}.droplet`), JSON.stringify(packet.chunk))
+                        fs.appendFileSync(
+                            path.join(
+                                process.cwd(),
+                                'tempFiles',
+                                packet.id,
+                                packet.fileName
+                            ),
+                            Buffer.from(packet.chunk.data)
+                        )
 
                         this.emit('transferComplete', {
                             type: 'transferComplete',
                             id: packet.id,
                             name: packet.fileName,
                             chunkNumber: packet.chunkNumber,
-                            size: packet.fileSize
+                            size: packet.fileSize,
                         })
                     }
 
@@ -127,18 +157,19 @@ class DropZoneFileReceiver extends EventEmitter {
 let receiver = new DropZoneFileReceiver()
 
 receiver.on('transferStarted', (packet) => {
-    parentPort.postMessage(packet)
+    // parentPort.postMessage(packet)
 })
 receiver.on('transferProgress', (packet) => {
-    parentPort.postMessage(packet)
+    // parentPort.postMessage(packet)
 })
 receiver.on('transferComplete', (packet) => {
-    buildFile({
-        id: packet.id,
-        chunkNumber: packet.chunkNumber,
-        fileName: packet.name,
-        fileSize: packet.size,
-    }).then((result) => {
-        console.log(result)
-    })
+    console.log(packet)
+    // buildFile({
+    //     id: packet.id,
+    //     chunkNumber: packet.chunkNumber,
+    //     fileName: packet.name,
+    //     fileSize: packet.size,
+    // }).then((result) => {
+    //     console.log(result)
+    // })
 })
