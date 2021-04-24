@@ -45,7 +45,7 @@ class DropZoneFileSender extends EventEmitter {
     }
 
     handleConnection(connection, information) {
-        console.log('Handling Transfer Receiver Connection: ' + workerData.information.id)
+        console.log('Handling Transfer Connection: ' + workerData.information.id)
 
         let peer = new ConnectorPeer(connection, information)
         this.emit('peer', peer)
