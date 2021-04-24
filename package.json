@@ -1,6 +1,6 @@
 {
     "name": "dropzone",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "DropZone File Sharing. You and your friends can share files through the p2p internet. DropZone makes this possible.",
     "private": true,
     "main": "main.js",
@@ -35,6 +35,7 @@
     "scripts": {
         "analyze": "source-map-explorer 'build/static/js/*.js'",
         "start": "concurrently \"yarn react-start\" \"wait-on http://localhost:3000/ && cross-env NODE_ENV=development yarn electron-start\"",
+        "electron-test": "electron build/electron.js",
         "build": "yarn react-build && copy-files-from-to",
         "testFiles": "copy-files-from-to",
         "electron-start": "electron .",
@@ -94,6 +95,7 @@
             "build/**/*",
             "node_modules/electron-updater"
         ],
+        "asar": false,
         "nsis": {
             "allowToChangeInstallationDirectory": true,
             "oneClick": false

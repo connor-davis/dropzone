@@ -180,7 +180,11 @@ autoUpdater.on('update-downloaded', (info) => {
 ipcMain.on('connectDropZone', (event, channel) => {
     dropzone = new DropZone({
         channel,
-        swarm: HyperSwarm(),
+        swarm: HyperSwarm({
+            preferredPort: 48727,
+            ephemeral: true,
+            queue: { multiplex: true },
+        }),
     })
 
     dropzone.on('alert', (message) => event.sender.send('alert', message))
