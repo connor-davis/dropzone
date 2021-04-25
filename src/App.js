@@ -1,11 +1,29 @@
 import { Button, Card, CardBody, CardFooter, Col, Input, Row } from 'reactstrap'
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
+import {
+    activeDownloadProgress,
+    addActiveDownload,
+    addCompletedDownload,
+    getDownloads,
+} from './app/slices/downloads'
+import {
+    activeUploadProgress,
+    addActiveUpload,
+    addCompletedUpload,
+    getUploads,
+} from './app/slices/uploads'
 import {
     getDiscoveryChannel,
     setDiscoveryChannel,
 } from './app/slices/discoveryChannel'
 import { useDispatch, useSelector } from 'react-redux'
 
+import ActiveDownloads from './app/components/downloads/ActiveDownloads'
+import ActiveUploads from './app/components/uploads/ActiveUploads'
+import CompletedDownloads from './app/components/downloads/CompletedDownloads'
+import CompletedUploads from './app/components/uploads/CompletedUploads'
+import Sidebar from './app/components/Sidebar'
+import store from './app/store'
 import { useDropzone } from 'react-dropzone'
 
 const App = () => {
@@ -15,15 +33,9 @@ const App = () => {
 
     const [nickname, setNickName] = useState('')
     const [channel, setChannel] = useState('')
-    const [downloadManager, setDownloadManager] = useState()
 
     const [messages, setMessages] = useState([])
     const [message, setMessage] = useState('')
-
-    const [activeDownloads, setActiveDownloads] = useState([])
-    const [completeDownloads, setCompleteDownloads] = useState([])
-
-    const [filePaths, setFilePaths] = useState([])
 
     const { getRootProps, getInputProps } = useDropzone({
         onDrop: (acceptedFiles) => {
@@ -37,7 +49,67 @@ const App = () => {
         window.joinedChannel(dispatch, setDiscoveryChannel)
         window.receiveMessages(setMessages)
 
-        window.on('transferRequest', (packet) => {})
+        /**
+         * Packets Sent By DropZone
+         */
+        window.on('packet', (packet) => {
+            const { active: activeUploads } = getUploads(store.getState())
+            const { active: activeDownloads } = getDownloads(store.getState())
+
+            switch (packet.type) {
+                /**
+                 * Information Sent By DropZone
+                 */
+                case 'info':
+                    console.log(packet.message)
+                    break
+
+                /**
+                 * Uploads Logic
+                 */
+                case 'start-upload':
+                    dispatch(addActiveUpload(packet))
+                    break
+
+                case 'progress-upload':
+                    dispatch(activeUploadProgress(packet))
+                    break
+
+                case 'finish-upload':
+                    dispatch(
+                        addCompletedUpload({
+                            ...activeUploads.filter(
+                                (upload) => upload.id === packet.id
+                            )[0],
+                        })
+                    )
+                    break
+
+                /**
+                 * Downloads Logic
+                 */
+                case 'start-download':
+                    dispatch(addActiveDownload(packet))
+                    break
+
+                case 'progress-download':
+                    dispatch(activeDownloadProgress(packet))
+                    break
+
+                case 'finish-download':
+                    dispatch(
+                        addCompletedDownload({
+                            ...activeDownloads.filter(
+                                (download) => download.id === packet.id
+                            )[0],
+                        })
+                    )
+                    break
+
+                default:
+                    break
+            }
+        })
     }, [])
 
     const connectChannel = (channelName) => {
@@ -55,35 +127,27 @@ const App = () => {
         setMessage('')
     }
 
-    let RenderActiveDownloads = () => {
-        // return activeDownloads.map((download) => (
-        //     <div className="text-primary mb-1">
-        //         {download.fileName +
-        //         ' - ' +
-        //         (download.progress ? download.progress : 0) +
-        //         '%'}
-        //     </div>
-        // ))
-    }
+    let InfoContent = () => (
+        <React.Fragment>
+            <ActiveUploads />
+            <CompletedUploads />
+            <ActiveDownloads />
+            <CompletedDownloads />
+        </React.Fragment>
+    )
 
-    let RenderCompleteDownloads = () => {
-        // return completeDownloads.map((download) => (
-        //     <div
-        //         className="text-primary mb-1"
-        //         onClick={() => {
-        //             let parts = Uint8Array.from(download.chunks)
-        //             let file = new Blob([parts], {type: download.fileType})
-        //
-        //             saveAs(file, download.fileName)
-        //         }}
-        //     >
-        //         {download.fileName +
-        //         ' - ' +
-        //         (download.progress ? download.progress : 100) +
-        //         '%'}
-        //     </div>
-        // ))
-    }
+    let InfoFooter = () => (
+        <div
+            style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'center',
+                alignItems: 'center',
+            }}
+        >
+            2021 @ Connor Davis
+        </div>
+    )
 
     return (
         <div
@@ -104,37 +168,10 @@ const App = () => {
                         className="m-0 p-0"
                     >
                         <Col md={3} className="m-0 p-0">
-                            <Card
-                                style={{
-                                    width: '100%',
-                                    height: '100vh',
-                                }}
-                                className="m-0 p-0"
-                            >
-                                <CardBody>
-                                    <CardFooter>Active Downloads</CardFooter>
-                                    <CardBody>
-                                        {/*<RenderActiveDownloads/>*/}
-                                    </CardBody>
-
-                                    <CardFooter>Complete Downloads</CardFooter>
-                                    <CardBody>
-                                        {/*<RenderCompleteDownloads/>*/}
-                                    </CardBody>
-                                </CardBody>
-                                <CardFooter>
-                                    <div
-                                        style={{
-                                            display: 'flex',
-                                            flexDirection: 'row',
-                                            justifyContent: 'center',
-                                            alignItems: 'center',
-                                        }}
-                                    >
-                                        2021 @ Connor Davis
-                                    </div>
-                                </CardFooter>
-                            </Card>
+                            <Sidebar
+                                content={<InfoContent />}
+                                footer={<InfoFooter />}
+                            />
                         </Col>
                         <Col md={6} className="m-0 p-0">
                             <div
@@ -187,9 +224,6 @@ const App = () => {
                                                 setMessage(value)
                                             }
                                             placeholder="Message"
-                                            style={{
-                                                width: '200px',
-                                            }}
                                         />
                                         <Button
                                             color="primary"

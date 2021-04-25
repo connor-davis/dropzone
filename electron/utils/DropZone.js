@@ -11,13 +11,13 @@ let uuid = require('uuid')
 
 const { Worker } = require('worker_threads')
 
-function sendFile(data) {
+function sendFile(zone, data) {
     return new Promise((resolve, reject) => {
         let worker = new Worker(__dirname + '/workers/DropZoneFileSender.js', {
             workerData: data,
         })
 
-        worker.on('message', resolve)
+        worker.on('message', (message) => zone.emit('packet', message))
         worker.on('error', reject)
         worker.on('exit', (code) => {
             if (code !== 0)
@@ -26,7 +26,7 @@ function sendFile(data) {
     })
 }
 
-function receiveFile(data) {
+function receiveFile(zone, data) {
     return new Promise((resolve, reject) => {
         let worker = new Worker(
             __dirname + '/workers/DropZoneFileReceiver.js',
@@ -35,7 +35,7 @@ function receiveFile(data) {
             }
         )
 
-        worker.on('message', resolve)
+        worker.on('message', (message) => zone.emit('packet', message))
         worker.on('error', reject)
         worker.on('exit', (code) => {
             if (code !== 0)
@@ -48,7 +48,7 @@ class DropZone extends EventEmitter {
     constructor(options = {}) {
         super()
 
-        this._swarm = options.swarm || HyperSwarm(options)
+        this._swarm = options.swarm || HyperSwarm()
 
         this.handleConnection = this.handleConnection.bind(this)
 
@@ -59,9 +59,7 @@ class DropZone extends EventEmitter {
         this._channel.on('packet', (peer, { packet }) => {
             switch (packet.type) {
                 case 'transferStarted':
-                    receiveFile(packet).then((pack) => {
-                        console.log(pack)
-                    })
+                    receiveFile(this, packet)
                     break
                 default:
                     break
@@ -116,7 +114,7 @@ class DropZone extends EventEmitter {
 
         this._channel.sendPacket(startTransfer)
 
-        sendFile({
+        sendFile(this, {
             path,
             information: {
                 id,
