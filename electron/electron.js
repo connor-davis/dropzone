@@ -180,25 +180,15 @@ autoUpdater.on('update-downloaded', (info) => {
 ipcMain.on('connectDropZone', (event, channel) => {
     dropzone = new DropZone({
         channel,
-        swarm: HyperSwarm({
-            preferredPort: 48727,
-            ephemeral: true,
-            queue: { multiplex: true },
-        }),
+        swarm: HyperSwarm(),
     })
 
-    dropzone.on('alert', (message) => event.sender.send('alert', message))
+    dropzone.on('packet', (packet) => {
+        event.sender.send('packet', packet)
+    })
 
     dropzone._channel.on('packet', (channelPeer, { packet }) => {
         switch (packet.type) {
-            case 'transferStarted':
-                console.log('Transfer Started: ', packet)
-                break
-            case 'chunk':
-                break
-            case 'transferComplete':
-                console.log('Transfer Complete: ', packet)
-                break
             case 'message':
                 event.sender.send('messagePacket', packet)
                 break

@@ -10,28 +10,13 @@ let ConnectorPeer = require('../connector/ConnectorPeer')
 let fs = require('fs')
 let path = require('path')
 
-let { workerData, parentPort, Worker } = require('worker_threads')
-
-function buildFile(data) {
-    return new Promise((resolve, reject) => {
-        let worker = new Worker(__dirname + '/file_builder.js', {
-            workerData: data,
-        })
-
-        worker.on('message', resolve)
-        worker.on('error', reject)
-        worker.on('exit', (code) => {
-            if (code !== 0)
-                reject(new Error(`Worker stopped with exit code ${code}`))
-        })
-    })
-}
+let { workerData, parentPort } = require('worker_threads')
 
 class DropZoneFileReceiver extends EventEmitter {
     constructor(options = {}) {
         super()
 
-        this._swarm = options.swarm || HyperSwarm(options)
+        this._swarm = options.swarm || HyperSwarm()
 
         this.handleConnection = this.handleConnection.bind(this)
 
@@ -66,6 +51,18 @@ class DropZoneFileReceiver extends EventEmitter {
                         ''
                     )
 
+                    parentPort.postMessage({
+                        type: 'start-download',
+                        id: packet.id,
+                        name: packet.fileName,
+                        path: path.join(
+                            process.cwd(),
+                            'tempFiles',
+                            packet.id,
+                            packet.fileName
+                        ),
+                    })
+
                     break
 
                 case 'chunk':
@@ -79,6 +76,12 @@ class DropZoneFileReceiver extends EventEmitter {
                             ),
                             Buffer.from(packet.chunk.data)
                         )
+
+                        parentPort.postMessage({
+                            type: 'progress-download',
+                            id: packet.id,
+                            progress: packet.progress,
+                        })
                     } else {
                         fs.appendFileSync(
                             path.join(
@@ -90,13 +93,25 @@ class DropZoneFileReceiver extends EventEmitter {
                             Buffer.from(packet.chunk.data)
                         )
 
+                        parentPort.postMessage({
+                            type: 'progress-download',
+                            id: packet.id,
+                            progress: packet.progress,
+                        })
+
+                        parentPort.postMessage({
+                            type: 'finish-download',
+                            id: packet.id,
+                            path: path.join(
+                                process.cwd(),
+                                'tempFiles',
+                                packet.id,
+                                packet.fileName
+                            ),
+                        })
+
                         this.destroy()
                     }
-
-                    break
-
-                case 'transferComplete':
-                    console.log('Sender finished uploading.')
 
                     break
 
@@ -107,7 +122,10 @@ class DropZoneFileReceiver extends EventEmitter {
     }
 
     handleConnection(connection, information) {
-        console.log('Handling Transfer Connection: ' + workerData.id)
+        parentPort.postMessage({
+            type: 'info',
+            message: 'Handling Transfer Connection: ' + workerData.id,
+        })
 
         let peer = new ConnectorPeer(connection, information)
         this.emit('peer', peer)

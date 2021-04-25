@@ -16,11 +16,21 @@ let createChunks = (file, fileSize, cSize) => {
     let endPointer = fileSize
     let chunks = []
 
+    parentPort.postMessage({
+        type: 'info',
+        message: 'Creating chunks for file.',
+    })
+
     while (startPointer < endPointer) {
         let newStartPointer = startPointer + cSize
         chunks.push(file.slice(startPointer, newStartPointer))
         startPointer = newStartPointer
     }
+
+    parentPort.postMessage({
+        type: 'info',
+        message: 'Created chunks for file.',
+    })
 
     return { chunks, numberChunks: chunks.length }
 }
@@ -29,7 +39,7 @@ class DropZoneFileSender extends EventEmitter {
     constructor(options = {}) {
         super()
 
-        this._swarm = options.swarm || HyperSwarm(options)
+        this._swarm = options.swarm || HyperSwarm()
 
         this.handleConnection = this.handleConnection.bind(this)
 
@@ -43,9 +53,11 @@ class DropZoneFileSender extends EventEmitter {
     }
 
     handleConnection(connection, information) {
-        console.log(
-            'Handling Transfer Connection: ' + workerData.information.id
-        )
+        parentPort.postMessage({
+            type: 'info',
+            message:
+                'Handling Transfer Connection: ' + workerData.information.id,
+        })
 
         let peer = new ConnectorPeer(connection, information)
         this.emit('peer', peer)
@@ -94,8 +106,13 @@ class DropZoneFileSender extends EventEmitter {
 
         this._channel.sendPacket(startTransfer)
 
+        parentPort.postMessage({
+            ...startTransfer,
+            type: 'start-upload',
+        })
+
         let buffer = fs.readFileSync(path)
-        let chunkSize = 1024 + 512
+        let chunkSize = 1024
         let { chunks, numberChunks } = createChunks(buffer, size, chunkSize)
         let chunkNumber = 0
 
@@ -115,6 +132,12 @@ class DropZoneFileSender extends EventEmitter {
 
             this._channel.sendPacket(chunkTransfer)
 
+            parentPort.postMessage({
+                type: 'progress-upload',
+                id,
+                progress,
+            })
+
             chunkNumber++
         }
 
@@ -130,6 +153,12 @@ class DropZoneFileSender extends EventEmitter {
         }
 
         this._channel.sendPacket(transferComplete)
+
+        parentPort.postMessage({
+            type: 'finish-upload',
+            id,
+            path,
+        })
     }
 }
 

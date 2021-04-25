@@ -13,6 +13,7 @@
         "copy-files-from-to": "^3.2.0",
         "electron-updater": "^4.3.8",
         "events": "^3.3.0",
+        "file-saver": "^2.0.5",
         "hyperswarm": "^2.15.3",
         "moment": "^2.29.1",
         "ndjson": "^2.0.0",
@@ -35,7 +36,7 @@
     "scripts": {
         "analyze": "source-map-explorer 'build/static/js/*.js'",
         "start": "concurrently \"yarn react-start\" \"wait-on http://localhost:3000/ && cross-env NODE_ENV=development yarn electron-start\"",
-        "electron-test": "electron build/electron.js",
+        "electron-test": "wait-on http://localhost:3000/ && cross-env NODE_ENV=development yarn electron-start",
         "build": "yarn react-build && copy-files-from-to",
         "testFiles": "copy-files-from-to",
         "electron-start": "electron .",
