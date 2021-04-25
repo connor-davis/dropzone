@@ -1,6 +1,6 @@
 {
     "name": "dropzone",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "DropZone File Sharing. You and your friends can share files through the p2p internet. DropZone makes this possible.",
     "private": true,
     "main": "main.js",
