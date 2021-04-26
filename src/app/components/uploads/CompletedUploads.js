@@ -1,4 +1,4 @@
-import { Button, CardBody, CardFooter } from 'reactstrap'
+import { CardBody, CardFooter } from 'reactstrap'
 
 import React from 'react'
 import { getCompletedUploads } from '../../slices/uploads'

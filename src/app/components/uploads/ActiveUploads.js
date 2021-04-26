@@ -1,6 +1,6 @@
 import { CardBody, CardFooter } from 'reactstrap'
-import React, { useEffect } from 'react'
 
+import React from 'react'
 import { getActiveUploads } from '../../slices/uploads'
 import { useSelector } from 'react-redux'
 

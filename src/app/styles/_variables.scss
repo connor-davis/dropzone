@@ -11,10 +11,10 @@ $gray-200: #f9f8fc !default;
 $gray-300: #ededed !default;
 $gray-400: #cbc8d0 !default;
 $gray-500: #adb5bd !default;
-$gray-600: #868e96 !default;
+$gray-800: #868e96 !default;
 $gray-700: #444 !default;
 $gray-800: #343a40 !default;
-$gray-900: #17141f !default;
+$gray-800: #17141f !default;
 $black: #000 !default;
 
 $blue: #007bff !default;
@@ -35,7 +35,7 @@ $info: $cyan !default;
 $warning: $yellow !default;
 $danger: $red !default;
 $light: $gray-200 !default;
-$dark: $gray-900 !default;
+$dark: $gray-800 !default;
 
 // Options
 
@@ -88,7 +88,7 @@ $progress-bar-bg: $primary !default;
 
 // List group
 
-$list-group-bg: $gray-900 !default;
+$list-group-bg: $gray-800 !default;
 $list-group-border-color: transparent !default;
 $list-group-hover-bg: lighten($list-group-bg, 10%) !default;
 $list-group-active-color: $white !default;

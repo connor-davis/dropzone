@@ -1,55 +1,56 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { createSlice } from '@reduxjs/toolkit';
 
 const downloadsSlice = createSlice({
     name: 'downloads',
     initialState: {
-        active: [],
-        completed: [],
+        downloads: [],
     },
     reducers: {
-        addActiveDownload: (state, action) => {
-            state.active = [...state.active, { ...action.payload, progress: 0 }]
+        addDownload: (state, action) => {
+            state.downloads = [
+                ...state.downloads,
+                { ...action.payload, progress: 0, complete: false },
+            ];
         },
-        activeDownloadProgress: (state, action) => {
-            state.active = [
-                ...state.active.map((a) => {
-                    if (a.id === action.payload.id)
-                        return { ...a, progress: action.payload.progress }
-                    return a
+        downloadProgress: (state, action) => {
+            state.downloads = [
+                ...state.downloads.map((download) => {
+                    if (download.id === action.payload.id)
+                        return {
+                            ...download,
+                            progress: action.payload.progress,
+                        };
+                    return download;
                 }),
-            ]
+            ];
         },
-        addCompletedDownload: (state, action) => {
-            state.active = state.active.filter(
-                (a) => a.id !== action.payload.id
-            )
-            state.completed = [...state.completed, action.payload]
+        completedDownload: (state, action) => {
+            state.downloads = [
+                ...state.downloads.map((download) => {
+                    if (download.id === action.payload.id)
+                        return {
+                            ...download,
+                            complete: true,
+                        };
+                    return download;
+                }),
+            ];
         },
     },
-})
+});
 
 const {
-    addActiveDownload,
-    activeDownloadProgress,
-    addCompletedDownload,
-} = downloadsSlice.actions
+    addDownload,
+    downloadProgress,
+    completedDownload,
+} = downloadsSlice.actions;
 
-const getDownloads = (state) => {
-    return {
-        active: state.downloadsReducer.active,
-        completed: state.downloadsReducer.completed,
-    }
-}
-
-const getActiveDownloads = (state) => state.downloadsReducer.active
-const getCompletedDownloads = (state) => state.downloadsReducer.completed
+const getDownloads = (state) => state.downloadsReducer.downloads;
 
 export {
     downloadsSlice,
-    addActiveDownload,
-    activeDownloadProgress,
-    addCompletedDownload,
+    addDownload,
+    downloadProgress,
+    completedDownload,
     getDownloads,
-    getActiveDownloads,
-    getCompletedDownloads,
-}
+};
