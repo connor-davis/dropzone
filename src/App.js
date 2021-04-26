@@ -4,6 +4,7 @@ import {
     completedDownload,
     downloadProgress,
     getDownloads,
+    removeDownload,
 } from './app/slices/downloads';
 import {
     addUpload,
@@ -51,6 +52,13 @@ let App = () => {
                  */
                 case 'message':
                     dispatch(addMessage(packet));
+                    break;
+
+                /**
+                 * Deleted File Logic
+                 */
+                case 'deleted':
+                    dispatch(removeDownload(packet));
                     break;
 
                 /**

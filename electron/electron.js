@@ -1,31 +1,43 @@
-const path = require('path');
-const { app, Menu, ipcMain } = require('electron');
-const {
+let path = require('path');
+let { app, Menu, ipcMain } = require('electron');
+let {
     createWindow,
     defineWindow,
     getWindow,
     closeAllWindows,
 } = require('./electronWindows');
-const { autoUpdater } = require('electron-updater');
+let { autoUpdater } = require('electron-updater');
 
-const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
-const MAIN_WINDOW_ID = 'main';
+let IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
+let MAIN_WINDOW_ID = 'main';
+
+let fs = require('fs');
 
 let HyperSwarm = require('hyperswarm');
 let DropZone = require('./utils/DropZone');
 
 let dropzone;
 
+let { ProgId, Regedit } = require('electron-regedit');
+
+new ProgId({
+    description: 'DropZone Droplet',
+    icon: 'droplet.ico',
+    extensions: ['droplet'],
+});
+
+Regedit.installAll();
+
 /**
  * Creates a window for the main application.
  * @returns {Window}
  */
 function createMainWindow() {
-    const windowOptions = {
+    let windowOptions = {
         width: 1280,
-        minWidth: 1280 / 3,
+        minWidth: 480,
         height: 720,
-        minHeight: 720 / 2,
+        minHeight: 480,
         show: false,
         center: true,
         autoHideMenuBar: true,
@@ -46,7 +58,7 @@ function createMainWindow() {
  * @returns {Electron.BrowserWindow}
  */
 function createSplashWindow() {
-    const windowOptions = {
+    let windowOptions = {
         width: 400,
         height: 200,
         resizable: false,
@@ -56,7 +68,7 @@ function createSplashWindow() {
         center: true,
         title: app.name,
     };
-    const window = defineWindow('splash', windowOptions);
+    let window = defineWindow('splash', windowOptions);
 
     if (IS_DEVELOPMENT) {
         window.loadURL('http://localhost:3000/splash.html').then();
@@ -76,7 +88,7 @@ process.on('uncaughtException', (err) => {
 
 // build menu
 
-const menuTemplate = [
+let menuTemplate = [
     {
         label: 'Window',
         role: 'window',
@@ -110,7 +122,7 @@ const menuTemplate = [
         ],
     },
 ];
-const menu = Menu.buildFromTemplate(menuTemplate);
+let menu = Menu.buildFromTemplate(menuTemplate);
 Menu.setApplicationMenu(menu);
 
 // prevent multiple instances of the main window
@@ -118,7 +130,7 @@ Menu.setApplicationMenu(menu);
 app.requestSingleInstanceLock();
 
 app.on('second-instance', () => {
-    const window = getWindow(MAIN_WINDOW_ID);
+    let window = getWindow(MAIN_WINDOW_ID);
     if (window) {
         if (window.isMinimized()) {
             window.restore();
@@ -137,7 +149,7 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
     // on macOS it is common to re-create a window even after all windows have been closed
-    const window = getWindow(MAIN_WINDOW_ID);
+    let window = getWindow(MAIN_WINDOW_ID);
     if (window === null) {
         createMainWindow();
     }
@@ -145,8 +157,8 @@ app.on('activate', () => {
 
 // create main BrowserWindow with a splash screen when electron is ready
 app.on('ready', () => {
-    const splashWindow = createSplashWindow();
-    const mainWindow = createMainWindow();
+    let splashWindow = createSplashWindow();
+    let mainWindow = createMainWindow();
     mainWindow.once('ready-to-show', () => {
         setTimeout(() => {
             splashWindow.close();
@@ -228,6 +240,11 @@ ipcMain.on('disconnect', (event) => {
 
 ipcMain.on('upload', (event, packet) => {
     dropzone.transferFile(packet);
+});
+
+ipcMain.on('delete', (event, path) => {
+    fs.unlinkSync(path);
+    event.sender.send('deleted', path);
 });
 
 ipcMain.on('message', (event, packet) => {

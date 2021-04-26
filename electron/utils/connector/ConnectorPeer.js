@@ -2,6 +2,7 @@ const { EventEmitter } = require('events');
 const ndjson = require('ndjson');
 
 let uuid = require('uuid');
+let fs = require('fs');
 
 class ConnectorPeer extends EventEmitter {
     constructor(connection, information) {
@@ -57,6 +58,10 @@ class ConnectorPeer extends EventEmitter {
 
     send(data) {
         this._outgoing.write(data);
+    }
+
+    file(path) {
+        fs.createReadStream(path).pipe(this._outgoing);
     }
 
     destroy() {

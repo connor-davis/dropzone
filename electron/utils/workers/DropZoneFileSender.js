@@ -11,30 +11,6 @@ let fs = require('fs');
 
 let { workerData, parentPort } = require('worker_threads');
 
-let createChunks = (file, fileSize, cSize) => {
-    let startPointer = 0;
-    let endPointer = fileSize;
-    let chunks = [];
-
-    parentPort.postMessage({
-        type: 'info',
-        message: 'Creating chunks for file.',
-    });
-
-    while (startPointer < endPointer) {
-        let newStartPointer = startPointer + cSize;
-        chunks.push(file.slice(startPointer, newStartPointer));
-        startPointer = newStartPointer;
-    }
-
-    parentPort.postMessage({
-        type: 'info',
-        message: 'Created chunks for file.',
-    });
-
-    return { chunks, numberChunks: chunks.length };
-};
-
 class DropZoneFileSender extends EventEmitter {
     constructor(options = {}) {
         super();
@@ -113,20 +89,23 @@ class DropZoneFileSender extends EventEmitter {
 
         let buffer = fs.readFileSync(path);
         let chunkSize = 1024;
-        let { chunks, numberChunks } = createChunks(buffer, size, chunkSize);
-        let chunkNumber = 0;
+        let startPointer = 0;
+        let endPointer = size;
 
-        for (let c = 0; c < numberChunks; c++) {
-            let progress = Math.round((chunkNumber / numberChunks) * 100);
+        parentPort.postMessage({
+            type: 'info',
+            message: 'Creating chunks for file.',
+        });
+
+        while (startPointer < endPointer) {
+            let newStartPointer = startPointer + chunkSize;
+            let chunk = buffer.slice(startPointer, newStartPointer);
+            let progress = Math.round((newStartPointer / endPointer) * 100);
 
             let chunkTransfer = {
                 type: 'chunk',
                 id,
-                chunk: chunks[c],
-                chunkNumber,
-                numberChunks,
-                fileName: name,
-                fileSize: size,
+                chunk,
                 progress,
             };
 
@@ -138,15 +117,17 @@ class DropZoneFileSender extends EventEmitter {
                 progress,
             });
 
-            chunkNumber++;
+            startPointer = newStartPointer;
         }
+
+        parentPort.postMessage({
+            type: 'info',
+            message: 'Created chunks for file.',
+        });
 
         let transferComplete = {
             type: 'transferComplete',
             id,
-            path,
-            chunkNumber,
-            numberChunks,
             fileName: name,
             fileType: type,
             fileSize: size,
@@ -159,6 +140,8 @@ class DropZoneFileSender extends EventEmitter {
             id,
             path,
         });
+
+        this.destroy();
     }
 }
 

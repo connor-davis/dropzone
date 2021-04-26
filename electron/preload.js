@@ -12,6 +12,10 @@ window.uploadFile = (packet) => {
     ipcRenderer.send('upload', packet);
 };
 
+window.removeFile = (path) => {
+    ipcRenderer.send('delete', path);
+};
+
 window.sendMessage = (packet) => {
     ipcRenderer.send('message', packet);
 };

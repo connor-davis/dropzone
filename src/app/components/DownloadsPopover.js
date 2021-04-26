@@ -45,6 +45,8 @@ let DownloadsPopover = () => {
                                     <p className="w-1/5 max-w-1/5 text-xs font-semibold m-0 py-1 px-2 uppercase text-blue-600">
                                         {download.complete
                                             ? '100%'
+                                            : download.progress < 100
+                                            ? download.progress + 1
                                             : download.progress + '%'}
                                     </p>
                                 </div>
@@ -53,6 +55,8 @@ let DownloadsPopover = () => {
                                         style={{
                                             width: download.complete
                                                 ? '100%'
+                                                : download.progress < 100
+                                                ? download.progress + 1
                                                 : download.progress + '%',
                                         }}
                                         className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500"
@@ -63,7 +67,8 @@ let DownloadsPopover = () => {
                                 className="border-l border-t border-r border-b border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white px-2 py-1 rounded-sm cursor-pointer transition duration-500 ease-in-out mr-2"
                                 onClick={() =>
                                     download.complete &&
-                                    saveAs(download.path, download.name)
+                                    saveAs(download.path, download.name) &&
+                                    window.removeFile(download.path)
                                 }
                             >
                                 <svg

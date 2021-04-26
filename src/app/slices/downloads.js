@@ -24,6 +24,13 @@ const downloadsSlice = createSlice({
                 }),
             ];
         },
+        removeDownload: (state, action) => {
+            state.downloads = [
+                ...state.downloads.filter(
+                    (download) => download.path !== action.payload
+                ),
+            ];
+        },
         completedDownload: (state, action) => {
             state.downloads = [
                 ...state.downloads.map((download) => {
@@ -42,6 +49,7 @@ const downloadsSlice = createSlice({
 const {
     addDownload,
     downloadProgress,
+    removeDownload,
     completedDownload,
 } = downloadsSlice.actions;
 
@@ -51,6 +59,7 @@ export {
     downloadsSlice,
     addDownload,
     downloadProgress,
+    removeDownload,
     completedDownload,
     getDownloads,
 };

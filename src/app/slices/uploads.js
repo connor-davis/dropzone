@@ -26,14 +26,9 @@ const uploadsSlice = createSlice({
         },
         completedUpload: (state, action) => {
             state.uploads = [
-                ...state.uploads.map((upload) => {
-                    if (upload.id === action.payload.id)
-                        return {
-                            ...upload,
-                            complete: true,
-                        };
-                    return upload;
-                }),
+                ...state.uploads.filter(
+                    (upload) => upload.id !== action.payload.id
+                ),
             ];
         },
     },
