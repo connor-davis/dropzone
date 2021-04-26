@@ -55,13 +55,6 @@ let App = () => {
                     break;
 
                 /**
-                 * Deleted File Logic
-                 */
-                case 'deleted':
-                    dispatch(removeDownload(packet));
-                    break;
-
-                /**
                  * Uploads Logic
                  */
                 case 'start-upload':
@@ -112,6 +105,10 @@ let App = () => {
     useEffect(() => {
         window.disconnect();
         listenPackets();
+
+        window.on('deleted', (id) => {
+            dispatch(removeDownload(id));
+        });
     }, [listenPackets]);
 
     return user.nickname ? <HomePage /> : <JoinPage />;

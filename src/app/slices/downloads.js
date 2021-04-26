@@ -27,7 +27,7 @@ const downloadsSlice = createSlice({
         removeDownload: (state, action) => {
             state.downloads = [
                 ...state.downloads.filter(
-                    (download) => download.path !== action.payload
+                    (download) => download.id !== action.payload
                 ),
             ];
         },

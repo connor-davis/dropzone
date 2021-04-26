@@ -46,7 +46,7 @@ let DownloadsPopover = () => {
                                         {download.complete
                                             ? '100%'
                                             : download.progress < 100
-                                            ? download.progress + 1
+                                            ? download.progress + 1 + '%'
                                             : download.progress + '%'}
                                     </p>
                                 </div>
@@ -56,7 +56,7 @@ let DownloadsPopover = () => {
                                             width: download.complete
                                                 ? '100%'
                                                 : download.progress < 100
-                                                ? download.progress + 1
+                                                ? download.progress + 1 + '%'
                                                 : download.progress + '%',
                                         }}
                                         className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500"
@@ -65,11 +65,10 @@ let DownloadsPopover = () => {
                             </div>
                             <div
                                 className="border-l border-t border-r border-b border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white px-2 py-1 rounded-sm cursor-pointer transition duration-500 ease-in-out mr-2"
-                                onClick={() =>
-                                    download.complete &&
-                                    saveAs(download.path, download.name) &&
-                                    window.removeFile(download.path)
-                                }
+                                onClick={() => {
+                                    saveAs(download.path, download.name);
+                                    window.removeFile(download.id);
+                                }}
                             >
                                 <svg
                                     className="w-4 h-4"

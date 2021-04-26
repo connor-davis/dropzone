@@ -242,9 +242,9 @@ ipcMain.on('upload', (event, packet) => {
     dropzone.transferFile(packet);
 });
 
-ipcMain.on('delete', (event, path) => {
-    fs.unlinkSync(path);
-    event.sender.send('deleted', path);
+ipcMain.on('delete', (event, id) => {
+    fs.unlinkSync(path.join(process.cwd(), 'tempFiles', id + '.droplet'));
+    event.sender.send('deleted', id);
 });
 
 ipcMain.on('message', (event, packet) => {
