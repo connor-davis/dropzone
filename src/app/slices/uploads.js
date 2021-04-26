@@ -1,53 +1,46 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { createSlice } from '@reduxjs/toolkit';
 
 const uploadsSlice = createSlice({
     name: 'uploads',
     initialState: {
-        active: [],
-        completed: [],
+        uploads: [],
     },
     reducers: {
-        addActiveUpload: (state, action) => {
-            state.active = [...state.active, { ...action.payload, progress: 0 }]
+        addUpload: (state, action) => {
+            state.uploads = [
+                ...state.uploads,
+                { ...action.payload, progress: 0, complete: false },
+            ];
         },
-        activeUploadProgress: (state, action) => {
-            state.active = state.active.map((a) => {
-                if (a.id === action.payload.id)
-                    return { ...a, progress: action.payload.progress }
-                return a
-            })
+        uploadProgress: (state, action) => {
+            state.uploads = [
+                ...state.uploads.map((upload) => {
+                    if (upload.id === action.payload.id)
+                        return {
+                            ...upload,
+                            progress: action.payload.progress,
+                        };
+                    return upload;
+                }),
+            ];
         },
-        addCompletedUpload: (state, action) => {
-            state.active = state.active.filter(
-                (a) => a.id !== action.payload.id
-            )
-            state.completed = [...state.completed, action.payload]
+        completedUpload: (state, action) => {
+            state.uploads = [
+                ...state.uploads.map((upload) => {
+                    if (upload.id === action.payload.id)
+                        return {
+                            ...upload,
+                            complete: true,
+                        };
+                    return upload;
+                }),
+            ];
         },
     },
-})
+});
 
-const {
-    addActiveUpload,
-    activeUploadProgress,
-    addCompletedUpload,
-} = uploadsSlice.actions
+const { addUpload, uploadProgress, completedUpload } = uploadsSlice.actions;
 
-const getUploads = (state) => {
-    return {
-        active: state.uploadsReducer.active,
-        completed: state.uploadsReducer.completed,
-    }
-}
+const getUploads = (state) => state.uploadsReducer.uploads;
 
-const getActiveUploads = (state) => state.uploadsReducer.active
-const getCompletedUploads = (state) => state.uploadsReducer.completed
-
-export {
-    uploadsSlice,
-    addActiveUpload,
-    activeUploadProgress,
-    addCompletedUpload,
-    getUploads,
-    getActiveUploads,
-    getCompletedUploads,
-}
+export { uploadsSlice, addUpload, uploadProgress, completedUpload, getUploads };
