@@ -28,4 +28,5 @@ yarn-error.log*
 
 /tempFiles
 
+*.lock
 *.rar

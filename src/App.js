@@ -43,8 +43,8 @@ let App = () => {
                 /**
                  * Joined Channel
                  */
-                case 'joined':
-                    alert('Joined ' + packet.channel + '.');
+                case 'peer':
+                    alert('Peer: ' + packet.identity + '.');
                     break;
 
                 /**
