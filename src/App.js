@@ -109,7 +109,7 @@ let App = () => {
         window.on('deleted', (id) => {
             dispatch(removeDownload(id));
         });
-    }, [listenPackets]);
+    }, [dispatch, listenPackets]);
 
     return user.nickname ? <HomePage /> : <JoinPage />;
 };

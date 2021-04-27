@@ -42,9 +42,9 @@
     },
     "scripts": {
         "analyze": "source-map-explorer 'build/static/js/*.js'",
-        "start": "concurrently \"yarn react-start\" \"wait-on http://localhost:3000/ && cross-env NODE_ENV=development yarn electron-start\"",
-        "electron-test": "wait-on http://localhost:3000/ && cross-env NODE_ENV=development yarn electron-start",
-        "build": "yarn react-build && copy-files-from-to",
+        "start": "concurrently \"npm run react-start\" \"wait-on http://localhost:3000/ && cross-env NODE_ENV=development npm run electron-start\"",
+        "electron-test": "wait-on http://localhost:3000/ && cross-env NODE_ENV=development npm run electron-start",
+        "build": "npm run react-build && copy-files-from-to",
         "testFiles": "copy-files-from-to",
         "electron-start": "electron .",
         "electron-dev": "electron ./build/electron",
