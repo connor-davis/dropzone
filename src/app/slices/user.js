@@ -1,18 +1,18 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const userSlice = createSlice({
-    name: 'user',
-    initialState: {
-        info: {},
+  name: 'user',
+  initialState: {
+    info: {},
+  },
+  reducers: {
+    setUser: (state, action) => {
+      state.info = { ...action.payload, connected: false };
     },
-    reducers: {
-        setUser: (state, action) => {
-            state.info = { ...action.payload, connected: false };
-        },
-        setUserConnected: (state, action) => {
-            state.info.connected = action.payload;
-        },
+    setUserConnected: (state, action) => {
+      state.info.connected = action.payload;
     },
+  },
 });
 
 const { setUser, setUserConnected } = userSlice.actions;
