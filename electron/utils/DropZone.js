@@ -9,9 +9,9 @@ const ConnectorPeer = require('./connector/ConnectorPeer');
 
 let uuid = require('uuid');
 
-const { Worker } = require('worker_threads');
+let { Worker } = require('worker_threads');
 
-function sendFile(zone, data) {
+function sendFileWorker(zone, data) {
     return new Promise((resolve, reject) => {
         let worker = new Worker(__dirname + '/workers/DropZoneFileSender.js', {
             workerData: data,
@@ -26,7 +26,7 @@ function sendFile(zone, data) {
     });
 }
 
-function receiveFile(zone, data) {
+function receiveFileWorker(zone, data) {
     return new Promise((resolve, reject) => {
         let worker = new Worker(
             __dirname + '/workers/DropZoneFileReceiver.js',
@@ -51,20 +51,17 @@ class DropZone extends EventEmitter {
         this._swarm = options.swarm || HyperSwarm();
 
         this.handleConnection = this.handleConnection.bind(this);
+        this.requestFileTransfer = this.requestFileTransfer.bind(this);
+        this.acceptFileTransfer = this.acceptFileTransfer.bind(this);
+        this.rejectFileTransfer = this.rejectFileTransfer.bind(this);
+        this.receiveFile = this.receiveFile.bind(this);
+        this.transferFile = this.transferFile.bind(this);
 
         this._swarm.once('connection', this.handleConnection);
 
         this._channel = this.channel(options.channel || 'dropzone');
 
-        this._channel.on('packet', (peer, { packet }) => {
-            switch (packet.type) {
-                case 'transferStarted':
-                    receiveFile(this, packet);
-                    break;
-                default:
-                    break;
-            }
-        });
+        this._fileTransferRequests = {};
     }
 
     handleConnection(connection, information) {
@@ -90,6 +87,41 @@ class DropZone extends EventEmitter {
         this.emit('channel', channel);
 
         channel.once('closed', () => this._swarm.leave(channelKey));
+        channel.on('packet', async (peer, { packet }) => {
+            switch (packet.type) {
+                case 'transferRequest':
+                    this.emit('packet', {
+                        type: 'transferRequest',
+                        fileIdentity: packet.fileIdentity,
+                        message:
+                            packet.nickname +
+                            ' wants to transfer a file called ' +
+                            packet.fileName +
+                            ' of type ' +
+                            packet.fileType +
+                            '.',
+                    });
+
+                    break;
+
+                case 'acceptTransferRequest':
+                    await this.transferFile(
+                        this._fileTransferRequests[packet.fileIdentity]
+                    );
+                    delete this._fileTransferRequests[packet.fileIdentity];
+
+                    break;
+
+                case 'rejectTransferRequest':
+                    delete this._fileTransferRequests[packet.fileIdentity];
+
+                    break;
+
+                default:
+                    this.emit('packet', packet);
+                    break;
+            }
+        });
 
         return channel;
     }
@@ -100,28 +132,57 @@ class DropZone extends EventEmitter {
         this.emit('destroyed');
     }
 
-    transferFile({ path, information }) {
-        let id = uuid.v4();
+    async requestFileTransfer({
+        nickname,
+        filePath,
+        fileName,
+        fileType,
+        fileSize,
+    }) {
+        let fileIdentity = uuid.v4();
 
-        let startTransfer = {
-            type: 'transferStarted',
-            id,
-            path,
-            fileName: information.name,
-            fileType: information.type,
-            fileSize: information.size,
+        this._fileTransferRequests[fileIdentity] = {
+            fileIdentity,
+            filePath,
+            fileName,
+            fileType,
+            fileSize,
         };
 
-        this._channel.sendPacket(startTransfer);
+        this._channel.packet({
+            type: 'transferRequest',
+            nickname,
+            fileIdentity,
+            fileName,
+            fileType,
+        });
+    }
 
-        sendFile(this, {
-            path,
-            information: {
-                id,
-                name: information.name,
-                type: information.type,
-                size: information.size,
-            },
+    async acceptFileTransfer({ fileIdentity }) {
+        this._channel.packet({ type: 'acceptTransferRequest', fileIdentity });
+    }
+
+    async rejectFileTransfer({ fileIdentity }) {
+        this._channel.packet({ type: 'rejectTransferRequest', fileIdentity });
+    }
+
+    async receiveFile({ fileIdentity }) {
+        await receiveFileWorker(this, { fileIdentity });
+    }
+
+    async transferFile({
+        fileIdentity,
+        filePath,
+        fileName,
+        fileType,
+        fileSize,
+    }) {
+        await sendFileWorker(this, {
+            fileIdentity,
+            filePath,
+            fileName,
+            fileType,
+            fileSize,
         });
     }
 }

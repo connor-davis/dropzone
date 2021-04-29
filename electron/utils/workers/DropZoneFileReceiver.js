@@ -7,9 +7,6 @@ let { crypto_generichash, crypto_generichash_BYTES } = sodium;
 let ConnectorChannel = require('../connector/ConnectorChannel');
 let ConnectorPeer = require('../connector/ConnectorPeer');
 
-let fs = require('fs');
-let path = require('path');
-
 let { workerData, parentPort } = require('worker_threads');
 
 class DropZoneFileReceiver extends EventEmitter {
@@ -22,94 +19,13 @@ class DropZoneFileReceiver extends EventEmitter {
 
         this._swarm.once('connection', this.handleConnection);
 
-        this._channel = this.channel(workerData.id);
-
-        this._channel.on('packet', (peer, { packet }) => {
-            switch (packet.type) {
-                case 'transferStarted':
-                    if (!fs.existsSync(path.join(process.cwd(), 'tempFiles'))) {
-                        fs.mkdirSync(path.join(process.cwd(), 'tempFiles'));
-                    }
-
-                    fs.writeFileSync(
-                        path.join(
-                            process.cwd(),
-                            'tempFiles',
-                            packet.id + '.droplet'
-                        ),
-                        ''
-                    );
-
-                    parentPort.postMessage({
-                        type: 'start-download',
-                        id: packet.id,
-                        name: packet.fileName,
-                        path: path.join(
-                            process.cwd(),
-                            'tempFiles',
-                            packet.id + '.droplet'
-                        ),
-                    });
-
-                    break;
-
-                case 'chunk':
-                    if (packet.progress < 100) {
-                        fs.appendFileSync(
-                            path.join(
-                                process.cwd(),
-                                'tempFiles',
-                                packet.id + '.droplet'
-                            ),
-                            Buffer.from(packet.chunk.data)
-                        );
-
-                        parentPort.postMessage({
-                            type: 'progress-download',
-                            id: packet.id,
-                            progress: packet.progress,
-                        });
-                    } else {
-                        fs.appendFileSync(
-                            path.join(
-                                process.cwd(),
-                                'tempFiles',
-                                packet.id + '.droplet'
-                            ),
-                            Buffer.from(packet.chunk.data)
-                        );
-
-                        parentPort.postMessage({
-                            type: 'progress-download',
-                            id: packet.id,
-                            progress: packet.progress,
-                        });
-
-                        parentPort.postMessage({
-                            type: 'finish-download',
-                            id: packet.id,
-                            path: path.join(
-                                process.cwd(),
-                                'tempFiles',
-                                packet.id + '.droplet'
-                            ),
-                        });
-
-                        this.destroy();
-                    }
-
-                    break;
-
-                default:
-                    break;
-            }
-        });
+        this._channel = this.channel(workerData.fileIdentity);
     }
 
     handleConnection(connection, information) {
         parentPort.postMessage({
             type: 'info',
-            message: 'Handling Transfer Connection: ' + workerData.id,
+            message: 'Transfer Connection Established.',
         });
 
         let peer = new ConnectorPeer(connection, information);
@@ -132,6 +48,9 @@ class DropZoneFileReceiver extends EventEmitter {
         this.emit('channel', channel);
 
         channel.once('closed', () => this._swarm.leave(channelKey));
+        channel.on('packet', (peer, packet) => {
+            parentPort.postMessage(packet);
+        });
 
         return channel;
     }
@@ -143,4 +62,4 @@ class DropZoneFileReceiver extends EventEmitter {
     }
 }
 
-let receiver = new DropZoneFileReceiver();
+new DropZoneFileReceiver();

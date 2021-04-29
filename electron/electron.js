@@ -1,12 +1,12 @@
 let path = require('path');
-let { app, Menu, ipcMain } = require('electron');
+let {app, Menu, ipcMain} = require('electron');
 let {
     createWindow,
     defineWindow,
     getWindow,
     closeAllWindows,
 } = require('./electronWindows');
-let { autoUpdater } = require('electron-updater');
+let {autoUpdater} = require('electron-updater');
 
 let IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
 let MAIN_WINDOW_ID = 'main';
@@ -18,7 +18,7 @@ let DropZone = require('./utils/DropZone');
 
 let dropzone;
 
-let { ProgId, Regedit } = require('electron-regedit');
+let {ProgId, Regedit} = require('electron-regedit');
 
 new ProgId({
     description: 'DropZone Droplet',
@@ -167,27 +167,35 @@ app.on('ready', () => {
     });
 });
 
-//--------------//
-// Auto updates //
-//--------------//
+/**
+ * Auto Updater
+ */
 
-autoUpdater.on('checking-for-update', () => {});
+autoUpdater.on('checking-for-update', () => {
+});
 
 autoUpdater.on('update-available', (info) => {
     autoUpdater.downloadUpdate();
 });
 
-autoUpdater.on('update-not-available', (info) => {});
+autoUpdater.on('update-not-available', (info) => {
+});
 
-autoUpdater.on('error', (err) => {});
+autoUpdater.on('error', (err) => {
+});
 
-autoUpdater.on('download-progress', (progressObj) => {});
+autoUpdater.on('download-progress', (progressObj) => {
+});
 
 autoUpdater.on('update-downloaded', (info) => {
     setTimeout(() => {
         autoUpdater.quitAndInstall();
     }, 500);
 });
+
+/**
+ * Main Stuff for the DropZone api
+ */
 
 ipcMain.on('connect', (event, channel) => {
     if (dropzone) {
@@ -200,23 +208,10 @@ ipcMain.on('connect', (event, channel) => {
         swarm: HyperSwarm(),
     });
 
-    dropzone.on('packet', (packet) => {
-        event.sender.send('packet', packet);
-    });
-
-    dropzone._channel.on('packet', (channelPeer, { packet }) => {
-        console.log(packet);
-        switch (packet.type) {
-            case 'message':
-                event.sender.send('packet', packet);
-                break;
-            default:
-                break;
-        }
-    });
+    dropzone.on('packet', (packet) => event.sender.send('packet', packet))
 
     dropzone._channel.on('disconnected', () => {
-        console.log('Peer has disconnected');
+        event.sender.send('disconnected');
     });
 
     dropzone.on('peer', (peer) => {
@@ -227,7 +222,7 @@ ipcMain.on('connect', (event, channel) => {
     });
 
     dropzone.on('channel', (_channel) => {
-        event.sender.send('packet', { type: 'joined', channel });
+        event.sender.send('packet', {type: 'joined', channel});
     });
 });
 
@@ -238,8 +233,17 @@ ipcMain.on('disconnect', (event) => {
     }
 });
 
-ipcMain.on('upload', (event, packet) => {
-    dropzone.transferFile(packet);
+ipcMain.on('upload', async (event, packet) => {
+    await dropzone.requestFileTransfer(packet);
+});
+
+ipcMain.on('acceptTransfer', async (event, request) => {
+    await dropzone.acceptFileTransfer(request);
+    await dropzone.receiveFile(request);
+});
+
+ipcMain.on('rejectTransfer', async (event, request) => {
+    await dropzone.rejectFileTransfer(request);
 });
 
 ipcMain.on('delete', (event, id) => {
@@ -248,5 +252,5 @@ ipcMain.on('delete', (event, id) => {
 });
 
 ipcMain.on('message', (event, packet) => {
-    dropzone._channel.sendPacket(packet);
+    dropzone._channel.packet(packet);
 });

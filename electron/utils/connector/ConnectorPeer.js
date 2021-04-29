@@ -1,8 +1,10 @@
 const { EventEmitter } = require('events');
 const ndjson = require('ndjson');
 
+let progress = require('progress-stream');
 let uuid = require('uuid');
 let fs = require('fs');
+let path = require('path');
 
 class ConnectorPeer extends EventEmitter {
     constructor(connection, information) {
@@ -18,12 +20,77 @@ class ConnectorPeer extends EventEmitter {
         connection.pipe(this._incoming);
         this._outgoing.pipe(connection);
 
-        this._incoming.on('data', (chunk) => {
-            this.emit('data', chunk);
+        this.fileData = {};
 
-            let { type } = chunk;
+        this._incoming.on('data', async (data) => {
+            this.emit('data', data);
 
-            this.emit(type, chunk);
+            let { type } = data;
+
+            switch (type) {
+                case 'start':
+                    this.emit('packet', {
+                        type: 'info',
+                        message: 'Download started for ' + data.fileName,
+                    });
+
+                    this.fileData = {
+                        ...data,
+                        filePath: path.join(
+                            process.cwd(),
+                            'tempFiles',
+                            data.fileIdentity + '.droplet'
+                        ),
+                    };
+
+                    this.emit('packet', {
+                        type: 'debug',
+                        fileData: this.fileData,
+                    });
+
+                    if (!fs.existsSync(this.fileData.filePath))
+                        fs.writeFileSync(this.fileData.filePath, '');
+
+                    this.emit('packet', {
+                        ...this.fileData,
+                        type: 'start-download',
+                    });
+
+                    break;
+
+                case 'progress':
+                    this.emit('packet', { ...data, type: 'progress-download' });
+
+                    break;
+
+                case 'Buffer':
+                    fs.appendFileSync(
+                        this.fileData.filePath,
+                        Buffer.from(data.data)
+                    );
+
+                    break;
+                case 'finish':
+                    this.emit('packet', {
+                        type: 'info',
+                        message:
+                            'Download finished for ' + this.fileData.fileName,
+                    });
+
+                    this.emit('packet', {
+                        ...this.fileData,
+                        type: 'finish-download',
+                    });
+
+                    this.destroy();
+
+                    break;
+
+                default:
+                    break;
+            }
+
+            this.emit(type, data);
         });
 
         this._connection.on('error', (error) => {
@@ -60,8 +127,78 @@ class ConnectorPeer extends EventEmitter {
         this._outgoing.write(data);
     }
 
-    file(path) {
-        fs.createReadStream(path).pipe(this._outgoing);
+    file(filePath, { fileIdentity, fileName, fileType, fileSize }) {
+        this._outgoing.write({
+            type: 'start',
+            fileIdentity,
+            fileName,
+            fileType,
+            fileSize,
+        });
+
+        this.emit('packet', {
+            type: 'info',
+            message: 'Upload started for ' + fileName,
+        });
+
+        this.emit('packet', {
+            type: 'start-upload',
+            fileIdentity,
+            fileName,
+            fileType,
+            fileSize,
+        });
+
+        let progressStream = progress({
+            length: fileSize,
+            time: 1000,
+        });
+
+        progressStream.on('progress', (progress) => {
+            this._outgoing.write({
+                type: 'progress',
+                fileIdentity,
+                percentage: progress.percentage,
+                speed: progress.speed,
+                eta: progress.eta,
+            });
+
+            this.emit('packet', {
+                type: 'progress-upload',
+                fileIdentity,
+                percentage: progress.percentage,
+                speed: progress.speed,
+                eta: progress.eta,
+            });
+        });
+
+        setTimeout(() => {
+            fs.createReadStream(filePath)
+                .pipe(progressStream)
+                .on('end', () => {
+                    this._outgoing.write({
+                        type: 'finish',
+                        fileIdentity,
+                        fileName,
+                        fileType,
+                        fileSize,
+                    });
+
+                    this.emit('packet', {
+                        type: 'info',
+                        message: 'Upload finished for ' + fileName,
+                    });
+
+                    this.emit('packet', {
+                        type: 'finish-upload',
+                        fileIdentity,
+                        fileName,
+                        fileType,
+                        fileSize,
+                    });
+                })
+                .pipe(this._outgoing);
+        }, 500);
     }
 
     destroy() {

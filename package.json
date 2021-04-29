@@ -22,6 +22,7 @@
         "moment": "^2.29.1",
         "ndjson": "^2.0.0",
         "node-sass": "4.14.1",
+        "progress-stream": "^2.0.0",
         "react": "^16.12.0",
         "react-animations": "^1.0.0",
         "react-dom": "^16.12.0",
@@ -42,7 +43,7 @@
     },
     "scripts": {
         "analyze": "source-map-explorer 'build/static/js/*.js'",
-        "start": "concurrently \"npm run react-start\" \"wait-on http://localhost:3000/ && cross-env NODE_ENV=development npm run electron-start\"",
+        "start": "concurrently \"npm run react-start\" \"npm run electron-test\"",
         "electron-test": "wait-on http://localhost:3000/ && cross-env NODE_ENV=development npm run electron-start",
         "build": "npm run react-build && copy-files-from-to",
         "testFiles": "copy-files-from-to",

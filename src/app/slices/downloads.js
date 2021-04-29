@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import {createSlice} from '@reduxjs/toolkit';
 
 const downloadsSlice = createSlice({
     name: 'downloads',
@@ -9,16 +9,18 @@ const downloadsSlice = createSlice({
         addDownload: (state, action) => {
             state.downloads = [
                 ...state.downloads,
-                { ...action.payload, progress: 0, complete: false },
+                {...action.payload, percentage: 0, eta: 0, speed: 0, complete: false},
             ];
         },
         downloadProgress: (state, action) => {
             state.downloads = [
                 ...state.downloads.map((download) => {
-                    if (download.id === action.payload.id)
+                    if (download.fileIdentity === action.payload.fileIdentity)
                         return {
                             ...download,
-                            progress: action.payload.progress,
+                            percentage: action.payload.percentage,
+                            eta: action.payload.eta,
+                            speed: action.payload.speed,
                         };
                     return download;
                 }),
@@ -27,14 +29,14 @@ const downloadsSlice = createSlice({
         removeDownload: (state, action) => {
             state.downloads = [
                 ...state.downloads.filter(
-                    (download) => download.id !== action.payload
+                    (download) => download.fileIdentity !== action.payload
                 ),
             ];
         },
         completedDownload: (state, action) => {
             state.downloads = [
                 ...state.downloads.map((download) => {
-                    if (download.id === action.payload.id)
+                    if (download.fileIdentity === action.payload.fileIdentity)
                         return {
                             ...download,
                             complete: true,

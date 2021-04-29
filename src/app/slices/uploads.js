@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import {createSlice} from '@reduxjs/toolkit';
 
 const uploadsSlice = createSlice({
     name: 'uploads',
@@ -9,16 +9,18 @@ const uploadsSlice = createSlice({
         addUpload: (state, action) => {
             state.uploads = [
                 ...state.uploads,
-                { ...action.payload, progress: 0, complete: false },
+                {...action.payload, percentage: 0, eta: 0, speed: 0, complete: false},
             ];
         },
         uploadProgress: (state, action) => {
             state.uploads = [
                 ...state.uploads.map((upload) => {
-                    if (upload.id === action.payload.id)
+                    if (upload.fileIdentity === action.payload.fileIdentity)
                         return {
                             ...upload,
-                            progress: action.payload.progress,
+                            percentage: action.payload.percentage,
+                            speed: action.payload.speed,
+                            eta: action.payload.eta,
                         };
                     return upload;
                 }),
@@ -26,16 +28,18 @@ const uploadsSlice = createSlice({
         },
         completedUpload: (state, action) => {
             state.uploads = [
-                ...state.uploads.filter(
-                    (upload) => upload.id !== action.payload.id
-                ),
+                ...state.uploads.map((upload) => {
+                    if (upload.fileIdentity === action.payload.fileIdentity)
+                        return {...upload, complete: true};
+                    else return upload;
+                }),
             ];
         },
     },
 });
 
-const { addUpload, uploadProgress, completedUpload } = uploadsSlice.actions;
+const {addUpload, uploadProgress, completedUpload} = uploadsSlice.actions;
 
 const getUploads = (state) => state.uploadsReducer.uploads;
 
-export { uploadsSlice, addUpload, uploadProgress, completedUpload, getUploads };
+export {uploadsSlice, addUpload, uploadProgress, completedUpload, getUploads};

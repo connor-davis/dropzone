@@ -3,6 +3,23 @@ import React from 'react';
 import { getUploads } from '../slices/uploads';
 import { useSelector } from 'react-redux';
 
+function formatSizeUnits(bytes) {
+    if (bytes >= 1073741824) {
+        bytes = (bytes / 1073741824).toFixed(2) + ' GB';
+    } else if (bytes >= 1048576) {
+        bytes = (bytes / 1048576).toFixed(2) + ' MB';
+    } else if (bytes >= 1024) {
+        bytes = (bytes / 1024).toFixed(2) + ' KB';
+    } else if (bytes > 1) {
+        bytes = bytes + ' bytes';
+    } else if (bytes === 1) {
+        bytes = bytes + ' byte';
+    } else {
+        bytes = '0 bytes';
+    }
+    return bytes;
+}
+
 let UploadsPopover = () => {
     let uploads = useSelector(getUploads);
 
@@ -10,9 +27,7 @@ let UploadsPopover = () => {
         <Popover className="relative">
             <Popover.Button className="flex flex-row justify-center items-center rounded-full w-8 h-8 cursor-pointer hover:bg-gray-300 relative dark:hover:bg-gray-800 transition duration-500 ease-in-out dark:border dark:border-gray-800">
                 <div className="flex flex-row justify-center items-center px-1 rounded-xl bg-blue-500 text-xs text-white absolute -bottom-1 right-6">
-                    {uploads.filter((upload) => !upload.complete).length > 0
-                        ? uploads.filter((upload) => !upload.complete).length
-                        : null}
+                    {uploads.length > 0 && uploads.length}
                 </div>
                 <svg
                     className="flex-none w-4 h-4 text-gray-500"
@@ -36,24 +51,38 @@ let UploadsPopover = () => {
                         <div className="flex flex-row">
                             <div className="relative pt-1 w-72 p-2">
                                 <div className="flex mb-2 items-center justify-between">
-                                    <p className="w-4/5 text-xs font-semibold m-0 py-1 px-2 rounded-full uppercase text-blue-600 bg-blue-200 truncate overflow-hidden">
+                                    <p
+                                        className={
+                                            upload.complete
+                                                ? 'w-4/5 text-xs font-semibold m-0 py-1 px-2 rounded-full uppercase text-green-600 bg-green-200 truncate overflow-hidden'
+                                                : 'w-4/5 text-xs font-semibold m-0 py-1 px-2 rounded-full uppercase text-blue-600 bg-blue-200 truncate overflow-hidden'
+                                        }
+                                    >
                                         {upload.fileName}
                                     </p>
-                                    <p className="w-1/5 text-xs font-semibold m-0 py-1 px-2 uppercase text-blue-600">
-                                        {upload.complete
-                                            ? '100%'
-                                            : upload.progress + '%'}
+                                    <p
+                                        className={
+                                            upload.complete
+                                                ? 'w-1/5 text-xs font-semibold m-0 py-1 px-2 uppercase text-green-600'
+                                                : 'w-1/5 text-xs font-semibold m-0 py-1 px-2 uppercase text-blue-600'
+                                        }
+                                    >
+                                        {Math.round(upload.percentage) + '%'}
                                     </p>
                                 </div>
                                 <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200">
                                     <div
                                         style={{
-                                            width: upload.complete
-                                                ? '100%'
-                                                : upload.progress + '%',
+                                            width:
+                                                Math.round(upload.percentage) +
+                                                '%',
                                         }}
-                                        className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500"
-                                    ></div>
+                                        className={
+                                            upload.complete
+                                                ? 'shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-green-500'
+                                                : 'shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500'
+                                        }
+                                    />
                                 </div>
                             </div>
                         </div>
