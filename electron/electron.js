@@ -197,59 +197,108 @@ autoUpdater.on('update-downloaded', (info) => {
  */
 
 ipcMain.on('connect', (event, channel) => {
-    if (dropzone) {
-        dropzone.destroy();
-        dropzone = null;
-    }
+    try {
+        if (dropzone) {
+            dropzone.destroy();
+            dropzone = null;
+        }
 
-    dropzone = new DropZone({
-        channel,
-        swarm: HyperSwarm(),
-    });
-
-    dropzone.on('packet', (packet) => event.sender.send('packet', packet));
-
-    dropzone._channel.on('disconnected', () => {
-        event.sender.send('disconnected');
-    });
-
-    dropzone.on('peer', (peer) => {
-        event.sender.send('packet', {
-            type: 'peer',
-            peerIdentity: peer.identity,
+        dropzone = new DropZone({
+            channel,
+            swarm: HyperSwarm(),
         });
-    });
 
-    dropzone.on('channel', (_channel) => {
-        event.sender.send('packet', { type: 'joined', channel });
-    });
+        dropzone.on('packet', (packet) => event.sender.send('packet', packet));
+
+        dropzone._channel.on('disconnected', () => {
+            event.sender.send('disconnected');
+        });
+
+        dropzone.on('peer', (peer) => {
+            event.sender.send('packet', {
+                type: 'peer',
+                peerIdentity: peer.identity,
+            });
+        });
+
+        dropzone.on('channel', (_channel) => {
+            event.sender.send('packet', { type: 'joined', channel });
+        });
+    } catch (error) {
+        event.sender.send('packet', {
+            type: 'error',
+            error,
+        });
+    }
 });
 
 ipcMain.on('disconnect', (event) => {
-    if (dropzone) {
-        dropzone.destroy();
-        dropzone = null;
+    try {
+        if (dropzone) {
+            dropzone.destroy();
+            dropzone = null;
+        }
+    } catch (error) {
+        event.sender.send('packet', {
+            type: 'error',
+            error,
+        });
     }
 });
 
 ipcMain.on('upload', async (event, packet) => {
-    await dropzone.requestFileTransfer(packet);
+    try {
+        await dropzone.requestFileTransfer(packet);
+    } catch (error) {
+        event.sender.send('packet', {
+            type: 'error',
+            error,
+        });
+    }
 });
 
 ipcMain.on('acceptTransfer', async (event, request) => {
-    await dropzone.acceptFileTransfer(request);
-    await dropzone.receiveFile(request);
+    try {
+        await dropzone.acceptFileTransfer(request);
+        await dropzone.receiveFile(request);
+    } catch (error) {
+        event.sender.send('packet', {
+            type: 'error',
+            error,
+        });
+    }
 });
 
 ipcMain.on('rejectTransfer', async (event, request) => {
-    await dropzone.rejectFileTransfer(request);
+    try {
+        await dropzone.rejectFileTransfer(request);
+    } catch (error) {
+        event.sender.send('packet', {
+            type: 'error',
+            error,
+        });
+    }
 });
 
 ipcMain.on('delete', (event, id) => {
-    fs.unlinkSync(path.join(process.cwd(), 'tempFiles', id + '.droplet'));
-    event.sender.send('deleted', id);
+    try {
+        fs.unlinkSync(path.join(process.cwd(), 'tempFiles', id + '.droplet'));
+        event.sender.send('deleted', id);
+    } catch (error) {
+        event.sender.send('packet', {
+            type: 'error',
+            error,
+        });
+    }
 });
 
 ipcMain.on('message', (event, packet) => {
-    dropzone._channel.packet(packet);
+    try {
+        dropzone._channel.packet(packet);
+    } catch (error) {
+        event.sender.send('packet', {
+            type: 'error',
+            error,
+        });
+    }
 });

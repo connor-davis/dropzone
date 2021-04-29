@@ -18,7 +18,10 @@ function sendFileWorker(zone, data) {
         });
 
         worker.on('message', (message) => zone.emit('packet', message));
-        worker.on('error', reject);
+        worker.on('error', (error) => {
+            reject(error);
+            worker.terminate();
+        });
         worker.on('exit', (code) => {
             if (code !== 0)
                 reject(new Error(`Worker stopped with exit code ${code}`));
@@ -36,7 +39,10 @@ function receiveFileWorker(zone, data) {
         );
 
         worker.on('message', (message) => zone.emit('packet', message));
-        worker.on('error', reject);
+        worker.on('error', (error) => {
+            reject(error);
+            worker.terminate();
+        });
         worker.on('exit', (code) => {
             if (code !== 0)
                 reject(new Error(`Worker stopped with exit code ${code}`));
@@ -167,7 +173,9 @@ class DropZone extends EventEmitter {
     }
 
     async receiveFile({ fileIdentity }) {
-        await receiveFileWorker(this, { fileIdentity });
+        await receiveFileWorker(this, { fileIdentity }).catch((error) =>
+            console.error(error)
+        );
     }
 
     async transferFile({
@@ -183,7 +191,7 @@ class DropZone extends EventEmitter {
             fileName,
             fileType,
             fileSize,
-        });
+        }).catch((error) => console.error(error));
     }
 }
 
