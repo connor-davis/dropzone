@@ -26,7 +26,7 @@ yarn-error.log*
 /.idea
 *.log
 
-/tempFiles
+/temp
 
 *.lock
 *.rar
