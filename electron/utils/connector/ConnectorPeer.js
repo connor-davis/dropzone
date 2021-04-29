@@ -173,7 +173,8 @@ class ConnectorPeer extends EventEmitter {
         });
 
         setTimeout(() => {
-            fs.createReadStream(filePath)
+            let transfer = fs
+                .createReadStream(filePath)
                 .pipe(progressStream)
                 .on('end', () => {
                     this._outgoing.write({
@@ -196,6 +197,8 @@ class ConnectorPeer extends EventEmitter {
                         fileType,
                         fileSize,
                     });
+
+                    this.destroy();
                 })
                 .pipe(this._outgoing);
         }, 500);

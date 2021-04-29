@@ -157,125 +157,144 @@ let App = () => {
                         </Transition>
                     ))}
             </div>
-            {transferRequests.map((request) => (
-                <Transition show={request.show} as={React.Fragment}>
-                    <Dialog
-                        as="div"
-                        className="fixed inset-0 z-10 overflow-y-auto"
-                        static
-                        open={request.show}
-                        onClose={() => {}}
-                    >
-                        <div className="min-h-screen px-4 text-center">
-                            <Transition.Child
-                                as={React.Fragment}
-                                enter="ease-out duration-300"
-                                enterFrom="opacity-0"
-                                enterTo="opacity-100"
-                                leave="ease-in duration-200"
-                                leaveFrom="opacity-100"
-                                leaveTo="opacity-0"
-                            >
-                                <Dialog.Overlay className="fixed inset-0 bg-black opacity-70" />
-                            </Transition.Child>
+            {transferRequests
+                .map((o) => {
+                    if (transferRequests.indexOf(o) === 0)
+                        return {
+                            ...o,
+                            show: true,
+                        };
+                    else return o;
+                })
+                .map((request) => (
+                    <Transition show={request.show} as={React.Fragment}>
+                        <Dialog
+                            as="div"
+                            className="fixed inset-0 z-10 overflow-y-auto"
+                            static
+                            open={request.show}
+                            onClose={() => {}}
+                        >
+                            <div className="min-h-screen px-4 text-center">
+                                <Transition.Child
+                                    as={React.Fragment}
+                                    enter="ease-out duration-300"
+                                    enterFrom="opacity-0"
+                                    enterTo="opacity-100"
+                                    leave="ease-in duration-200"
+                                    leaveFrom="opacity-100"
+                                    leaveTo="opacity-0"
+                                >
+                                    <Dialog.Overlay className="fixed inset-0 bg-black opacity-70" />
+                                </Transition.Child>
 
-                            <span
-                                className="inline-block h-screen align-middle"
-                                aria-hidden="true"
-                            >
-                                &#8203;
-                            </span>
-                            <Transition.Child
-                                as={React.Fragment}
-                                enter="ease-out duration-300"
-                                enterFrom="opacity-0 scale-95"
-                                enterTo="opacity-100 scale-100"
-                                leave="ease-in duration-200"
-                                leaveFrom="opacity-100 scale-100"
-                                leaveTo="opacity-0 scale-95"
-                            >
-                                <div className="inline-block w-full max-w-md p-3 my-8 overflow-hidden text-left align-middle transition-all transform bg-gray-100 dark:bg-black shadow-xl rounded-2xl border-l border-t border-r border-b border-gray-300 dark:border-gray-800">
-                                    <Dialog.Title
-                                        as="h3"
-                                        className="text-lg font-medium leading-6 text-gray-900 dark:text-white"
-                                    >
-                                        Transfer Request
-                                    </Dialog.Title>
-                                    <div className="mt-2">
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                                            {request.message}
-                                        </p>
-                                    </div>
-
-                                    <div className="mt-4">
-                                        <button
-                                            type="button"
-                                            className="inline-flex justify-center px-4 py-2 text-sm font-medium text-green-900 bg-green-100 border border-transparent rounded-md hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500 mr-2"
-                                            onClick={() => {
-                                                setTransferRequests((old) => [
-                                                    ...old
-                                                        .filter(
-                                                            (o) =>
-                                                                o.fileIdentity !==
-                                                                request.fileIdentity
-                                                        )
-                                                        .map((o) => {
-                                                            if (
-                                                                old.indexOf(
-                                                                    o
-                                                                ) === 0
-                                                            )
-                                                                return {
-                                                                    ...o,
-                                                                    show: true,
-                                                                };
-                                                            else return o;
-                                                        }),
-                                                ]);
-
-                                                window.acceptTransfer(request);
-                                            }}
+                                <span
+                                    className="inline-block h-screen align-middle"
+                                    aria-hidden="true"
+                                >
+                                    &#8203;
+                                </span>
+                                <Transition.Child
+                                    as={React.Fragment}
+                                    enter="ease-out duration-300"
+                                    enterFrom="opacity-0 scale-95"
+                                    enterTo="opacity-100 scale-100"
+                                    leave="ease-in duration-200"
+                                    leaveFrom="opacity-100 scale-100"
+                                    leaveTo="opacity-0 scale-95"
+                                >
+                                    <div className="inline-block w-full max-w-md p-3 my-8 overflow-hidden text-left align-middle transition-all transform bg-gray-100 dark:bg-black shadow-xl rounded-2xl border-l border-t border-r border-b border-gray-300 dark:border-gray-800">
+                                        <Dialog.Title
+                                            as="h3"
+                                            className="text-lg font-medium leading-6 text-gray-900 dark:text-white"
                                         >
-                                            Accept
-                                        </button>
+                                            Transfer Request
+                                        </Dialog.Title>
+                                        <div className="mt-2">
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                {request.message}
+                                            </p>
+                                        </div>
 
-                                        <button
-                                            type="button"
-                                            className="inline-flex justify-center px-4 py-2 text-sm font-medium text-red-900 bg-red-100 border border-transparent rounded-md hover:bg-red-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500"
-                                            onClick={() => {
-                                                setTransferRequests((old) => [
-                                                    ...old
-                                                        .filter(
-                                                            (o) =>
-                                                                o.fileIdentity !==
-                                                                request.fileIdentity
-                                                        )
-                                                        .map((o) => {
-                                                            if (
-                                                                old.indexOf(
-                                                                    o
-                                                                ) === 0
-                                                            )
-                                                                return {
-                                                                    ...o,
-                                                                    show: true,
-                                                                };
-                                                            else return o;
-                                                        }),
-                                                ]);
+                                        <div className="mt-4">
+                                            <button
+                                                type="button"
+                                                className="inline-flex justify-center px-4 py-2 text-sm font-medium text-green-900 bg-green-100 border border-transparent rounded-md hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500 mr-2"
+                                                onClick={() => {
+                                                    setTransferRequests(
+                                                        (old) => [
+                                                            ...old
+                                                                .filter(
+                                                                    (o) =>
+                                                                        o.fileIdentity !==
+                                                                        request.fileIdentity
+                                                                )
+                                                                .map((o) => {
+                                                                    if (
+                                                                        old.indexOf(
+                                                                            o
+                                                                        ) === 0
+                                                                    )
+                                                                        return {
+                                                                            ...o,
+                                                                            show: true,
+                                                                        };
+                                                                    else
+                                                                        return o;
+                                                                }),
+                                                        ]
+                                                    );
 
-                                                window.rejectTransfer(request);
-                                            }}
-                                        >
-                                            Reject
-                                        </button>
+                                                    window.acceptTransfer(
+                                                        request
+                                                    );
+                                                }}
+                                            >
+                                                Accept
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                className="inline-flex justify-center px-4 py-2 text-sm font-medium text-red-900 bg-red-100 border border-transparent rounded-md hover:bg-red-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500"
+                                                onClick={() => {
+                                                    setTransferRequests(
+                                                        (old) => [
+                                                            ...old
+                                                                .filter(
+                                                                    (o) =>
+                                                                        o.fileIdentity !==
+                                                                        request.fileIdentity
+                                                                )
+                                                                .map((o) => {
+                                                                    if (
+                                                                        old.indexOf(
+                                                                            o
+                                                                        ) === 0
+                                                                    )
+                                                                        return {
+                                                                            ...o,
+                                                                            show: true,
+                                                                        };
+                                                                    else
+                                                                        return o;
+                                                                }),
+                                                        ]
+                                                    );
+
+                                                    window.rejectTransfer(
+                                                        request
+                                                    );
+                                                }}
+                                            >
+                                                Reject
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            </Transition.Child>
-                        </div>
-                    </Dialog>
-                </Transition>
-            ))}
+                                </Transition.Child>
+                            </div>
+                        </Dialog>
+                    </Transition>
+                ))}
             {user.nickname ? <HomePage /> : <JoinPage />}
         </>
     );
