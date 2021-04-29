@@ -1,12 +1,12 @@
 let path = require('path');
-let {app, Menu, ipcMain} = require('electron');
+let { app, Menu, ipcMain } = require('electron');
 let {
     createWindow,
     defineWindow,
     getWindow,
     closeAllWindows,
 } = require('./electronWindows');
-let {autoUpdater} = require('electron-updater');
+let { autoUpdater } = require('electron-updater');
 
 let IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
 let MAIN_WINDOW_ID = 'main';
@@ -18,7 +18,7 @@ let DropZone = require('./utils/DropZone');
 
 let dropzone;
 
-let {ProgId, Regedit} = require('electron-regedit');
+let { ProgId, Regedit } = require('electron-regedit');
 
 new ProgId({
     description: 'DropZone Droplet',
@@ -27,6 +27,9 @@ new ProgId({
 });
 
 Regedit.installAll();
+
+if (!fs.existsSync(path.join(process.cwd(), 'tempFiles')))
+    fs.mkdirSync(path.join(process.cwd(), 'tempFiles'));
 
 /**
  * Creates a window for the main application.
@@ -171,21 +174,17 @@ app.on('ready', () => {
  * Auto Updater
  */
 
-autoUpdater.on('checking-for-update', () => {
-});
+autoUpdater.on('checking-for-update', () => {});
 
 autoUpdater.on('update-available', (info) => {
     autoUpdater.downloadUpdate();
 });
 
-autoUpdater.on('update-not-available', (info) => {
-});
+autoUpdater.on('update-not-available', (info) => {});
 
-autoUpdater.on('error', (err) => {
-});
+autoUpdater.on('error', (err) => {});
 
-autoUpdater.on('download-progress', (progressObj) => {
-});
+autoUpdater.on('download-progress', (progressObj) => {});
 
 autoUpdater.on('update-downloaded', (info) => {
     setTimeout(() => {
@@ -208,7 +207,7 @@ ipcMain.on('connect', (event, channel) => {
         swarm: HyperSwarm(),
     });
 
-    dropzone.on('packet', (packet) => event.sender.send('packet', packet))
+    dropzone.on('packet', (packet) => event.sender.send('packet', packet));
 
     dropzone._channel.on('disconnected', () => {
         event.sender.send('disconnected');
@@ -222,7 +221,7 @@ ipcMain.on('connect', (event, channel) => {
     });
 
     dropzone.on('channel', (_channel) => {
-        event.sender.send('packet', {type: 'joined', channel});
+        event.sender.send('packet', { type: 'joined', channel });
     });
 });
 
