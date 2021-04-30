@@ -1,65 +1,72 @@
-let HyperSwarm = require('hyperswarm');
-let { EventEmitter } = require('events');
-let sodium = require('sodium-universal');
-
-let { crypto_generichash, crypto_generichash_BYTES } = sodium;
-
-let ConnectorChannel = require('../connector/ConnectorChannel');
-let ConnectorPeer = require('../connector/ConnectorPeer');
-
 let { workerData, parentPort } = require('worker_threads');
+let HyperBeam = require('hyperbeam');
+let ndjson = require('ndjson');
+let fs = require('fs');
+let path = require('path');
+let uuid = require('uuid');
+let progress = require('progress-stream');
 
-class DropZoneFileReceiver extends EventEmitter {
-    constructor(options = {}) {
-        super();
+let packetBeam = new HyperBeam(workerData.fileIdentity);
+let packetIncoming = ndjson.parse();
+let packetOutgoing = ndjson.stringify();
 
-        this._swarm = options.swarm || HyperSwarm();
+packetOutgoing.pipe(packetBeam).pipe(packetIncoming);
 
-        this.handleConnection = this.handleConnection.bind(this);
+let fileInformation = {};
 
-        this._swarm.once('connection', this.handleConnection);
+packetIncoming.on('data', (data) => {
+  let { type } = data;
 
-        this._channel = this.channel(workerData.fileIdentity);
-    }
+  switch (type) {
+    case 'start':
+      parentPort.postMessage({
+        type: 'info',
+        message: 'Download started for ' + data.fileName,
+      });
 
-    handleConnection(connection, information) {
-        parentPort.postMessage({
-            type: 'info',
-            message: 'Transfer Connection Established.',
-        });
+      fileInformation = {
+        ...data,
+        filePath: path.join(
+          process.cwd(),
+          'temp',
+          data.fileIdentity + '.droplet'
+        ),
+      };
 
-        let peer = new ConnectorPeer(connection, information);
-        this.emit('peer', peer);
-    }
+      if (!fs.existsSync(fileInformation.filePath))
+        fs.writeFileSync(fileInformation.filePath, '');
 
-    channel(channelName) {
-        let channelKey = Buffer.alloc(crypto_generichash_BYTES);
+      parentPort.postMessage({
+        ...fileInformation,
+        type: 'start-download',
+      });
 
-        crypto_generichash(channelKey, Buffer.from(channelName));
+      break;
 
-        let channelKeyString = channelKey.toString('hex');
-        let channel = new ConnectorChannel(this, channelKeyString, channelName);
+    case 'progress':
+      parentPort.postMessage({ ...data, type: 'progress-download' });
 
-        this._swarm.join(channelKey, {
-            announce: true,
-            lookup: true,
-        });
+      break;
 
-        this.emit('channel', channel);
+    case 'Buffer':
+      fs.appendFileSync(fileInformation.filePath, Buffer.from(data.data));
 
-        channel.once('closed', () => this._swarm.leave(channelKey));
-        channel.on('packet', (peer, packet) => {
-            parentPort.postMessage(packet);
-        });
+      break;
 
-        return channel;
-    }
+    case 'finish':
+      parentPort.postMessage({
+        type: 'info',
+        message: 'Download finished for ' + fileInformation.fileName,
+      });
 
-    destroy(callback) {
-        this._swarm.removeListener('connection', this.handleConnection);
-        this._swarm.destroy(callback);
-        this.emit('destroyed');
-    }
-}
+      parentPort.postMessage({
+        ...fileInformation,
+        type: 'finish-download',
+      });
 
-new DropZoneFileReceiver();
+      break;
+
+    default:
+      break;
+  }
+});

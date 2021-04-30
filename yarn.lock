@@ -4021,6 +4021,11 @@ clone-response@^1.0.2:
   dependencies:
     mimic-response "^1.0.0"
 
+clone@^2.1.2:
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/clone/-/clone-2.1.2.tgz#1b7f4b9f591f1e8f83670401600345a02887435f"
+  integrity sha1-G39Ln1kfHo+DZwQBYANFoCiHQ18=
+
 co@^4.6.0:
   version "4.6.0"
   resolved "https://registry.yarnpkg.com/co/-/co-4.6.0.tgz#6ea6bdf3d853ae54ccb8e47bfa0bf3f9031fb184"
@@ -6017,6 +6022,11 @@ fast-deep-equal@^3.1.1:
   resolved "https://registry.yarnpkg.com/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz#3a7d56b559d6cbc3eb512325244e619a65c6c525"
   integrity sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==
 
+fast-fifo@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/fast-fifo/-/fast-fifo-1.0.0.tgz#9bc72e6860347bb045a876d1c5c0af11e9b984e7"
+  integrity sha512-4VEXmjxLj7sbs8J//cn2qhRap50dGzF5n8fjay8mau+Jn4hxSeR3xPFwxMaQq/pDaq7+KQk0PAbC2+nWDkJrmQ==
+
 fast-glob@^2.0.2:
   version "2.2.7"
   resolved "https://registry.yarnpkg.com/fast-glob/-/fast-glob-2.2.7.tgz#6953857c3afa475fff92ee6015d52da70a4cd39d"
@@ -6987,6 +6997,15 @@ history@^4.9.0:
     tiny-warning "^1.0.0"
     value-equal "^1.0.1"
 
+hmac-blake2b@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/hmac-blake2b/-/hmac-blake2b-2.0.0.tgz#09494e5d245d7afe45d157093080b159f7bacf15"
+  integrity sha512-JbGNtM1YRd8EQH/2vNTAP1oy5lJVPlBFYZfCJTu3k8sqOUm0rRIf/3+MCd5noVykETwTbun6jEOc+4Tu78ubHA==
+  dependencies:
+    nanoassert "^1.1.0"
+    sodium-native "^3.1.1"
+    sodium-universal "^3.0.0"
+
 hmac-drbg@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/hmac-drbg/-/hmac-drbg-1.0.1.tgz#d2745701025a6c775a6c545793ed502fc0c649a1"
@@ -7196,7 +7215,17 @@ https-proxy-agent@^5.0.0:
     agent-base "6"
     debug "4"
 
-hyperswarm@^2.15.3:
+hyperbeam@^1.1.3:
+  version "1.1.3"
+  resolved "https://registry.yarnpkg.com/hyperbeam/-/hyperbeam-1.1.3.tgz#b256a64beeee2b5e0c00fed8e0978d4038d39a8c"
+  integrity sha512-yozWXZx3yXVprf/MM9WqMt5WY60Im8k6ELJDNFGfyMeO+UieITbDmkvVwMnKQA3ptWqUK8fPf/tEGgklWh7Weg==
+  dependencies:
+    hyperswarm "^2.15.2"
+    noise-peer "^2.1.1"
+    sodium-native "^3.2.0"
+    streamx "^2.10.0"
+
+hyperswarm@^2.15.2, hyperswarm@^2.15.3:
   version "2.15.3"
   resolved "https://registry.yarnpkg.com/hyperswarm/-/hyperswarm-2.15.3.tgz#34395e0538fda4883d03f2565e2b529c12fb9d7a"
   integrity sha512-bESly7s6X7cLMWCn4dsAVE/ttNbbB13o6jku2B7fV2wIV/g7NVC/yF7S3NiknGlftKn/uLU3fhMmbOfdBvQ5IA==
@@ -9344,7 +9373,7 @@ nan@^2.12.1, nan@^2.13.2:
   resolved "https://registry.yarnpkg.com/nan/-/nan-2.14.2.tgz#f5376400695168f4cc694ac9393d0c9585eeea19"
   integrity sha512-M2ufzIiINKCuDfBSAUr1vWQ+vuVcA9kqx8JJUsbQi6yf1uGRyb7HfpdfUr5qLXf3B/t8dPvcjhKMmlfnP47EzQ==
 
-nanoassert@^1.0.0:
+nanoassert@^1.0.0, nanoassert@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/nanoassert/-/nanoassert-1.1.0.tgz#4f3152e09540fde28c76f44b19bbcd1d5a42478d"
   integrity sha1-TzFS4JVA/eKMdvRLGbvNHVpCR40=
@@ -9554,6 +9583,26 @@ node-sass@4.14.1:
     sass-graph "2.2.5"
     stdout-stream "^1.4.0"
     "true-case-path" "^1.0.2"
+
+noise-peer@^2.1.1:
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/noise-peer/-/noise-peer-2.1.1.tgz#1c34c67d44c3aa131008432e50f0878b6e54c5c1"
+  integrity sha512-8bzZiV7D7GbHn4dSJ89EHYSpXWhveqH+yXjylgPA8qLFAXGizLkZOadZGpIVZqtQpbHuZGI4uUxVqVGHNGzC1A==
+  dependencies:
+    readable-stream "^3.0.6"
+    secretstream-stream "^2.0.0"
+    simple-handshake "^3.0.0"
+    sodium-native "^3.1.1"
+
+noise-protocol@^3.0.0:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/noise-protocol/-/noise-protocol-3.0.1.tgz#e1102eceebf8ac4a7b00d7ff911bab3a769fc3ac"
+  integrity sha512-4rQGZvismeb4tMf91O31oDYLGntkEs4p4wa69+14juHTV4A3COtWyDck9PwBqFjg7S8TPZLCUXUdOnOZQJ5UBA==
+  dependencies:
+    clone "^2.1.2"
+    hmac-blake2b "^2.0.0"
+    nanoassert "^2.0.0"
+    sodium-universal "^3.0.2"
 
 noms@0.0.0:
   version "0.0.0"
@@ -12279,6 +12328,14 @@ scss-tokenizer@^0.2.3:
     js-base64 "^2.1.8"
     source-map "^0.4.2"
 
+secretstream-stream@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/secretstream-stream/-/secretstream-stream-2.0.0.tgz#dc2e48fa428de9e839e6feaa3ddc0d4b27d68c4f"
+  integrity sha512-5w3SlraZgFADOa5ScmJIXB/D/Qm2rFksmRNHSs913P9Z6s9ODsknAi85zni1v0KmTd4DovNKxHr3HCObYHes7Q==
+  dependencies:
+    nanoassert "^2.0.0"
+    sodium-native "^3.1.1"
+
 select-hose@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/select-hose/-/select-hose-2.0.0.tgz#625d8658f865af43ec962bfc376a37359a4994ca"
@@ -12536,6 +12593,14 @@ signed-varint@^2.0.1:
   dependencies:
     varint "~5.0.0"
 
+simple-handshake@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/simple-handshake/-/simple-handshake-3.0.0.tgz#76241e702642a65496f8356dd463989ec23e407c"
+  integrity sha512-8Te0vlxvhpNCMgwnWFTbRR6Re2l8hq8wyXQc3lY9dPYXFxYwVkh79LhDQHFCOWRavmbiOdfqq1l5HT/73Rn2/w==
+  dependencies:
+    nanoassert "^2.0.0"
+    noise-protocol "^3.0.0"
+
 simple-swizzle@^0.2.2:
   version "0.2.2"
   resolved "https://registry.yarnpkg.com/simple-swizzle/-/simple-swizzle-0.2.2.tgz#a4da6b635ffcccca33f70d17cb92592de95e557a"
@@ -12668,7 +12733,7 @@ sodium-native@^3.0.1, sodium-native@^3.1.1, sodium-native@^3.2.0:
     ini "^1.3.5"
     node-gyp-build "^4.2.0"
 
-sodium-universal@^3.0.4:
+sodium-universal@^3.0.0, sodium-universal@^3.0.2, sodium-universal@^3.0.4:
   version "3.0.4"
   resolved "https://registry.yarnpkg.com/sodium-universal/-/sodium-universal-3.0.4.tgz#93e08eb9fcef05d26dddd9215bf0c770b6c87b7b"
   integrity sha512-WnBQ0GDo/82shKQHZBZT9h4q4miCtxkbzcwVLsCBPWNq4qbq8BXhKICt9nPwQAsJ43ct/rF61FKu4t0druUBug==
@@ -12958,6 +13023,13 @@ stream-shift@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/stream-shift/-/stream-shift-1.0.1.tgz#d7088281559ab2778424279b0877da3c392d5a3d"
   integrity sha512-AiisoFqQ0vbGcZgQPY1cdP2I76glaVA/RauYR4G4thNFgkTqr90yXTo4LYX60Jl+sIlPNHHdGSwo01AvbKUSVQ==
+
+streamx@^2.10.0:
+  version "2.10.3"
+  resolved "https://registry.yarnpkg.com/streamx/-/streamx-2.10.3.tgz#66a9c7ec41040cde234bcaaa744890c8e2e8055b"
+  integrity sha512-Ss4rEDWlTAUrIqaQsX6tNBNANHxSmbyrA5PlCji0a6xdJtVzfkEMLLrkVW5OSyr4TshiSb1WA2TqMGMUpGnouQ==
+  dependencies:
+    fast-fifo "^1.0.0"
 
 strict-uri-encode@^1.0.0:
   version "1.1.0"
