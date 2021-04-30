@@ -163,6 +163,7 @@ class DropZone extends EventEmitter {
 
   async acceptFileTransfer({ fileIdentity }) {
     this._channel.packet({ type: 'acceptTransferRequest', fileIdentity });
+    this.receiveFile({ fileIdentity });
   }
 
   async rejectFileTransfer({ fileIdentity }) {

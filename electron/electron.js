@@ -279,7 +279,7 @@ ipcMain.on('disconnect', (event) => {
 
 ipcMain.on('upload', async (event, packet) => {
   try {
-    await dropzone.requestFileTransfer(packet);
+    dropzone.requestFileTransfer(packet);
   } catch (error) {
     event.sender.send('packet', {
       type: 'error',
@@ -289,20 +289,12 @@ ipcMain.on('upload', async (event, packet) => {
 });
 
 ipcMain.on('acceptTransfer', async (event, request) => {
-  try {
-    await dropzone.acceptFileTransfer(request);
-    await dropzone.receiveFile(request);
-  } catch (error) {
-    event.sender.send('packet', {
-      type: 'error',
-      error,
-    });
-  }
+  dropzone.acceptFileTransfer(request);
 });
 
 ipcMain.on('rejectTransfer', async (event, request) => {
   try {
-    await dropzone.rejectFileTransfer(request);
+    dropzone.rejectFileTransfer(request);
   } catch (error) {
     event.sender.send('packet', {
       type: 'error',

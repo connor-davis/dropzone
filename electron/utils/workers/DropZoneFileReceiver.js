@@ -3,8 +3,6 @@ let HyperBeam = require('hyperbeam');
 let ndjson = require('ndjson');
 let fs = require('fs');
 let path = require('path');
-let uuid = require('uuid');
-let progress = require('progress-stream');
 
 let packetBeam = new HyperBeam(workerData.fileIdentity);
 let packetIncoming = ndjson.parse();
@@ -13,11 +11,18 @@ let packetOutgoing = ndjson.stringify();
 packetOutgoing.pipe(packetBeam).pipe(packetIncoming);
 
 let fileInformation = {};
+let peerReady = false;
 
 packetIncoming.on('data', (data) => {
   let { type } = data;
 
   switch (type) {
+    case 'ready':
+      console.log('peer is ready for ' + workerData.fileIdentity);
+      peerReady = true;
+
+      break;
+
     case 'start':
       parentPort.postMessage({
         type: 'info',
@@ -70,3 +75,15 @@ packetIncoming.on('data', (data) => {
       break;
   }
 });
+
+let i = setInterval(() => {
+  if (!peerReady) {
+    packetOutgoing.write({
+      type: 'ready',
+    });
+
+    console.log('sent ready for ' + workerData.fileIdentity);
+  } else {
+    clearInterval(i);
+  }
+}, 1000);
