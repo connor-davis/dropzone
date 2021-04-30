@@ -124,80 +124,86 @@ class ConnectorPeer extends EventEmitter {
   }
 
   file(filePath, { fileIdentity, fileName, fileType, fileSize }) {
-    this._outgoing.write({
-      type: 'start',
-      fileIdentity,
-      fileName,
-      fileType,
-      fileSize,
-    });
-
-    this.emit('packet', {
-      type: 'info',
-      message: 'Upload started for ' + fileName,
-    });
-
-    this.emit('packet', {
-      type: 'start-upload',
-      fileIdentity,
-      fileName,
-      fileType,
-      fileSize,
-    });
-
-    let progressStream = progress({
-      length: fileSize,
-      time: 1000,
-    });
-
-    progressStream.on('progress', (progress) => {
+    try {
       this._outgoing.write({
-        type: 'progress',
+        type: 'start',
         fileIdentity,
-        percentage: progress.percentage,
-        speed: progress.speed,
-        eta: progress.eta,
+        fileName,
+        fileType,
+        fileSize,
       });
 
       this.emit('packet', {
-        type: 'progress-upload',
-        fileIdentity,
-        percentage: progress.percentage,
-        speed: progress.speed,
-        eta: progress.eta,
+        type: 'info',
+        message: 'Upload started for ' + fileName,
       });
-    });
 
-    setTimeout(() => {
-      let transfer = fs
-        .createReadStream(filePath)
-        .pipe(progressStream)
-        .on('end', () => {
-          this._outgoing.write({
-            type: 'finish',
-            fileIdentity,
-            fileName,
-            fileType,
-            fileSize,
-          });
+      this.emit('packet', {
+        type: 'start-upload',
+        fileIdentity,
+        fileName,
+        fileType,
+        fileSize,
+      });
 
-          this.emit('packet', {
-            type: 'info',
-            message: 'Upload finished for ' + fileName,
-          });
+      let progressStream = progress({
+        length: fileSize,
+        time: 1000,
+      });
 
-          this.emit('packet', {
-            type: 'finish-upload',
-            fileIdentity,
-            fileName,
-            fileType,
-            fileSize,
-          });
+      progressStream.on('progress', (progress) => {
+        this._outgoing.write({
+          type: 'progress',
+          fileIdentity,
+          percentage: progress.percentage,
+          speed: progress.speed,
+          eta: progress.eta,
+        });
 
-          this.destroy();
-        })
-        .pipe(this._outgoing);
-    }, 500);
+        this.emit('packet', {
+          type: 'progress-upload',
+          fileIdentity,
+          percentage: progress.percentage,
+          speed: progress.speed,
+          eta: progress.eta,
+        });
+      });
+
+      setTimeout(() => {
+        fs.createReadStream(filePath)
+          .pipe(progressStream)
+          .on('end', () => {
+            this._outgoing.write({
+              type: 'finish',
+              fileIdentity,
+              fileName,
+              fileType,
+              fileSize,
+            });
+
+            this.emit('packet', {
+              type: 'info',
+              message: 'Upload finished for ' + fileName,
+            });
+
+            this.emit('packet', {
+              type: 'finish-upload',
+              fileIdentity,
+              fileName,
+              fileType,
+              fileSize,
+            });
+
+            this.destroy();
+          })
+          .pipe(this._outgoing);
+      }, 500);
+    } catch (error) {
+      this.emit('packet', {
+        type: 'error',
+        error,
+      });
+    }
   }
 
   destroy() {
