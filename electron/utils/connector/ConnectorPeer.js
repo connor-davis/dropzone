@@ -1,11 +1,7 @@
 const { EventEmitter } = require('events');
 const ndjson = require('ndjson');
 
-let progress = require('progress-stream');
 let uuid = require('uuid');
-let fs = require('fs');
-let path = require('path');
-
 class ConnectorPeer extends EventEmitter {
   constructor(connection, information) {
     super();
@@ -19,8 +15,6 @@ class ConnectorPeer extends EventEmitter {
 
     connection.pipe(this._incoming);
     this._outgoing.pipe(connection);
-
-    this.fileData = {};
 
     this._incoming.on('data', async (data) => {
       this.emit('data', data);

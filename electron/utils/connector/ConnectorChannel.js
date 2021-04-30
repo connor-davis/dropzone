@@ -11,7 +11,6 @@ class ConnectorChannel extends EventEmitter {
 
     this.handlePeer = this.handlePeer.bind(this);
     this.packet = this.packet.bind(this);
-    this.file = this.file.bind(this);
     this.send = this.send.bind(this);
     this.broadcast = this.broadcast.bind(this);
 

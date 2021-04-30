@@ -199,34 +199,67 @@ ipcMain.on('connect', (event, channel) => {
     if (dropzone) {
       dropzone.destroy();
       dropzone = null;
-    }
 
-    dropzone = new DropZone({
-      channel,
-      swarm: HyperSwarm(),
-    });
-
-    dropzone.on('packet', (packet) => event.sender.send('packet', packet));
-
-    dropzone._channel.on('disconnected', () => {
-      event.sender.send('disconnected');
-    });
-
-    dropzone.on('peer', (peer) => {
-      event.sender.send('packet', {
-        type: 'peer',
-        peerIdentity: peer.identity,
+      dropzone = new DropZone({
+        channel,
+        swarm: HyperSwarm({
+          preferredPort: 48972,
+          ephemeral: true,
+          queue: { multiplex: true },
+        }),
       });
-    });
 
-    dropzone.on('channel', (_channel) => {
-      event.sender.send('packet', { type: 'joined', channel });
-    });
+      dropzone.on('packet', (packet) => event.sender.send('packet', packet));
+
+      dropzone._channel.on('disconnected', () => {
+        event.sender.send('disconnected');
+      });
+
+      dropzone.on('peer', (peer) => {
+        event.sender.send('packet', {
+          type: 'peer',
+          peerIdentity: peer.identity,
+        });
+      });
+
+      dropzone.on('channel', (_channel) => {
+        console.log('Joined channel ' + _channel);
+        event.sender.send('packet', { type: 'joined', channel });
+      });
+    } else {
+      dropzone = new DropZone({
+        channel,
+        swarm: HyperSwarm({
+          preferredPort: 48972,
+          ephemeral: true,
+          queue: { multiplex: true },
+        }),
+      });
+
+      dropzone.on('packet', (packet) => event.sender.send('packet', packet));
+
+      dropzone._channel.on('disconnected', () => {
+        event.sender.send('disconnected');
+      });
+
+      dropzone.on('peer', (peer) => {
+        event.sender.send('packet', {
+          type: 'peer',
+          peerIdentity: peer.identity,
+        });
+      });
+
+      dropzone.on('channel', (_channel) => {
+        console.log('Joined channel ' + _channel);
+        event.sender.send('packet', { type: 'joined', channel });
+      });
+    }
   } catch (error) {
     event.sender.send('packet', {
       type: 'error',
       error,
     });
+    console.log(error);
   }
 });
 
