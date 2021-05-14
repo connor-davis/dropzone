@@ -60,7 +60,7 @@ let ChatPopover = () => {
     <Popover className="relative">
       {({ open }) => (
         <>
-          <Popover.Button className="flex flex-row justify-center items-center rounded-full w-8 h-8 cursor-pointer hover:bg-gray-300 relative dark:hover:bg-gray-800 transition duration-500 ease-in-out dark:border dark:border-gray-800">
+          <Popover.Button className="flex flex-row justify-center items-center rounded-full w-8 h-8 cursor-pointer hover:bg-gray-300 relative dark:hover:bg-gray-800 transition duration-500 ease-in-out dark:border dark:border-gray-800 focus:outline-none">
             <div className="flex flex-row justify-center items-center px-1 rounded-xl bg-blue-500 text-xs text-white absolute -bottom-1 right-6">
               {messages.filter(
                 (message) =>
@@ -75,7 +75,7 @@ let ChatPopover = () => {
                 : null}
             </div>
             <svg
-              className="flex-none w-4 h-4 text-gray-500"
+              className="flex-none w-4 h-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -92,49 +92,8 @@ let ChatPopover = () => {
 
           <Popover.Panel className="absolute z-10 top-10 -right-0 h-96 rounded-xl text-gray-500 dark:text-white cursor-default flex flex-row border-r border-b border-l border-t border-gray-200 dark:border-gray-800">
             <div className="flex flex-row rounded-xl bg-gray-100 dark:bg-black">
-              {/* <div className="flex flex-col w-48 border-r border-gray-200 dark:border dark:border-gray-800">
-                        <div className="flex flex-row items-center rounded-tl-xl p-2 bg-gray-100 border-b border-gray-200 dark:bg-black dark:border-gray-800">
-                            <div className="text-sm mr-auto">Messages</div>
-                            <div className="flex flex-row justify-center items-center rounded-full w-6 h-6 cursor-pointer self-end hover:bg-gray-300 dark:hover:bg-gray-800 transition duration-500 ease-in-out">
-                                <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                                    />
-                                </svg>
-                            </div>
-                        </div>
-
-                        <div className="flex-auto bg-gray-100 dark:bg-black rounded-bl-xl">
-                            Content
-                        </div>
-                    </div> */}
               <div className="flex flex-col w-96">
                 <div className="flex flex-row items-center rounded-tl-xl rounded-tr-xl p-2 bg-gray-100 border-b border-gray-200 bg-gray-100 dark:bg-black dark:border-gray-800 mb-2">
-                  {/* <div className="flex flex-row justify-center items-center rounded-full w-6 h-6 cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-800 transition duration-500 ease-in-out">
-                                <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M15 19l-7-7 7-7"
-                                    />
-                                </svg>
-                            </div> */}
                   <div className="text-sm ml-2">Messages</div>
                 </div>
 

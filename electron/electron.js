@@ -13,11 +13,6 @@ let MAIN_WINDOW_ID = 'main';
 
 let fs = require('fs');
 
-let HyperSwarm = require('hyperswarm');
-let DropZone = require('./utils/DropZone');
-
-let dropzone;
-
 let { ProgId, Regedit } = require('electron-regedit');
 
 new ProgId({
@@ -190,138 +185,76 @@ autoUpdater.on('update-downloaded', (info) => {
   }, 500);
 });
 
-/**
- * Main Stuff for the DropZone api
- */
+let appFolders = {
+  0: {
+    root: process.cwd(),
+    name: 'userData',
+    subFolders: {
+      0: {
+        root: `${process.cwd()}/userData`,
+        name: 'zones',
+      },
+    },
+  },
+};
 
-ipcMain.on('connect', (event, channel) => {
-  try {
-    if (dropzone) {
-      dropzone.destroy();
-      dropzone = null;
+let createFolders = (folders) => {
+  for (let folderIndex in folders) {
+    let folder = folders[folderIndex];
 
-      dropzone = new DropZone({
-        channel,
-        swarm: HyperSwarm({
-          preferredPort: 48972,
-          ephemeral: true,
-          queue: { multiplex: true },
-        }),
-      });
+    if (!fs.existsSync(`${folder.root}/${folder.name}`))
+      fs.mkdirSync(`${folder.root}/${folder.name}`);
 
-      dropzone.on('packet', (packet) => event.sender.send('packet', packet));
-
-      dropzone._channel.on('disconnected', () => {
-        event.sender.send('disconnected');
-      });
-
-      dropzone.on('peer', (peer) => {
-        event.sender.send('packet', {
-          type: 'peer',
-          peerIdentity: peer.identity,
-        });
-      });
-
-      dropzone.on('channel', (_channel) => {
-        console.log('Joined channel ' + _channel);
-        event.sender.send('packet', { type: 'joined', channel });
-      });
-    } else {
-      dropzone = new DropZone({
-        channel,
-        swarm: HyperSwarm({
-          preferredPort: 48972,
-          ephemeral: true,
-          queue: { multiplex: true },
-        }),
-      });
-
-      dropzone.on('packet', (packet) => event.sender.send('packet', packet));
-
-      dropzone._channel.on('disconnected', () => {
-        event.sender.send('disconnected');
-      });
-
-      dropzone.on('peer', (peer) => {
-        event.sender.send('packet', {
-          type: 'peer',
-          peerIdentity: peer.identity,
-        });
-      });
-
-      dropzone.on('channel', (_channel) => {
-        console.log('Joined channel ' + _channel);
-        event.sender.send('packet', { type: 'joined', channel });
-      });
-    }
-  } catch (error) {
-    event.sender.send('packet', {
-      type: 'error',
-      error,
-    });
-    console.log(error);
+    if (folder.subFolders) createFolders(folder.subFolders);
   }
+};
+
+createFolders(appFolders);
+
+ipcMain.on('createProfile', (event, packet) => {
+  fs.writeFileSync(
+    `${process.cwd()}/userData/profile.json`,
+    Buffer.from(JSON.stringify(packet))
+  );
+
+  event.sender.send('profileData', packet);
 });
 
-ipcMain.on('disconnect', (event) => {
-  try {
-    if (dropzone) {
-      dropzone.destroy();
-      dropzone = null;
-    }
-  } catch (error) {
-    event.sender.send('packet', {
-      type: 'error',
-      error,
-    });
-  }
+ipcMain.on('removeProfile', (event) => {
+  fs.unlinkSync(`${process.cwd()}/userData/profile.json`);
+
+  event.sender.send('profileData', {});
 });
 
-ipcMain.on('upload', async (event, packet) => {
-  try {
-    dropzone.requestFileTransfer(packet);
-  } catch (error) {
-    event.sender.send('packet', {
-      type: 'error',
-      error,
-    });
-  }
+ipcMain.on('getProfile', (event) => {
+  let profileData = fs.readFileSync(`${process.cwd()}/userData/profile.json`);
+
+  event.sender.send('profileData', JSON.parse(profileData));
 });
 
-ipcMain.on('acceptTransfer', async (event, request) => {
-  dropzone.acceptFileTransfer(request);
+ipcMain.on('createZone', (event, packet) => {
+  fs.writeFileSync(
+    `${process.cwd()}/userData/zones/${packet.zoneId}.json`,
+    Buffer.from(JSON.stringify(packet))
+  );
+
+  event.sender.send('zoneCreated', packet);
 });
 
-ipcMain.on('rejectTransfer', async (event, request) => {
-  try {
-    dropzone.rejectFileTransfer(request);
-  } catch (error) {
-    event.sender.send('packet', {
-      type: 'error',
-      error,
-    });
-  }
+ipcMain.on('removeZone', (event, zoneId) => {
+  fs.unlinkSync(`${process.cwd()}/zones/${zoneId}.json`);
+
+  event.sender.send('zoneRemoved', zoneId);
 });
 
-ipcMain.on('delete', (event, id) => {
-  try {
-    fs.unlinkSync(path.join(process.cwd(), 'temp', id + '.droplet'));
-    event.sender.send('deleted', id);
-  } catch (error) {
-    event.sender.send('packet', {
-      type: 'error',
-      error,
-    });
-  }
-});
+ipcMain.on('getZones', (event) => {
+  let zones = fs.readdirSync(`${process.cwd()}/userData/zones`);
 
-ipcMain.on('message', (event, packet) => {
-  try {
-    dropzone._channel.packet(packet);
-  } catch (error) {
-    event.sender.send('packet', {
-      type: 'error',
-      error,
-    });
+  for (let zoneIndex in zones) {
+    let zone = zones[zoneIndex];
+
+    let zoneData = fs.readFileSync(`${process.cwd()}/userData/zones/${zone}`);
+
+    event.sender.send('zoneData', JSON.parse(zoneData));
   }
 });

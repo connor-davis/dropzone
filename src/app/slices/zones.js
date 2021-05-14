@@ -3,6 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 let zonesSlice = createSlice({
   name: 'zones',
   initialState: {
+    zone: {},
     zones: [],
   },
   reducers: {
@@ -14,11 +15,17 @@ let zonesSlice = createSlice({
         ...state.zones.filter((zone) => zone.zoneId !== action.payload),
       ];
     },
+    activateZone: (state, action) => {
+      state.zone = {
+        ...state.zones.filter((zone) => zone.zoneId === action.payload)[0],
+      };
+    },
   },
 });
 
-let { addZone, removeZone } = zonesSlice.actions;
+let { addZone, removeZone, activateZone } = zonesSlice.actions;
 
+let getZoneInfo = (state) => state.zonesReducer.zone;
 let getZones = (state) => state.zonesReducer.zones;
 
-export { zonesSlice, addZone, removeZone, getZones };
+export { zonesSlice, addZone, removeZone, activateZone, getZoneInfo, getZones };
