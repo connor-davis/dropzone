@@ -227,9 +227,13 @@ ipcMain.on('removeProfile', (event) => {
 });
 
 ipcMain.on('getProfile', (event) => {
-  let profileData = fs.readFileSync(`${process.cwd()}/userData/profile.json`);
+  if (!fs.existsSync(`${process.cwd()}/userData/profile.json`)) {
+    event.sender.send('profileData', {});
+  } else {
+    let profileData = fs.readFileSync(`${process.cwd()}/userData/profile.json`);
 
-  event.sender.send('profileData', JSON.parse(profileData));
+    event.sender.send('profileData', JSON.parse(profileData));
+  }
 });
 
 ipcMain.on('createZone', (event, packet) => {
