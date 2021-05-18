@@ -57,18 +57,25 @@ let ZonesSidebar = ({}) => {
 
   return (
     <div className="relative flex-none h-full w-64 lg:w-1/5 border-r border-gray-200 dark:bg-black dark:border-gray-800">
+      <AddZoneDialog
+        show={addZone}
+        onAdd={(zoneName) => {
+          console.log(zoneName);
+          if (zoneName !== '') {
+            setAddZone(false) && console.log(zoneName);
+          } else {
+            setAddZone(true);
+          }
+        }}
+        onCancel={() => setAddZone(false)}
+      />
+
       <Header title="Zones">
         <div
           className="flex flex-row justify-center items-center rounded-full hover:text-green-500 w-8 h-8 cursor-pointer hover:bg-gray-300 relative dark:hover:bg-gray-800 transition duration-500 ease-in-out dark:border dark:border-gray-800 focus:outline-none"
-          onClick={() => setAddZone(!addZone)}
+          onClick={() => setAddZone(true)}
         >
           <AddIcon />
-
-          <AddZoneDialog
-            show={addZone}
-            onAdd={() => setAddZone(false)}
-            onCancel={() => setAddZone(false)}
-          />
         </div>
       </Header>
 

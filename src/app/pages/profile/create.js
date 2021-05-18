@@ -46,7 +46,7 @@ let CreateProfilePage = () => {
           </div>
 
           <div
-            className="flex flex-row flex-auto border-l border-t border-r border-b border-blue-900 px-3 py-2 hover:border-0 hover:bg-blue-900 rounded-md cursor-pointer mb-3"
+            className="flex flex-row flex-auto border-l border-t border-r border-b border-blue-900 px-3 py-2 text-blue-900 hover:text-white hover:border-0 hover:bg-blue-900 rounded-md cursor-pointer mb-3"
             onClick={() =>
               userUsername !== '' &&
               userFirstName !== '' &&

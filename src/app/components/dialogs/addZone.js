@@ -23,7 +23,7 @@ let AddZoneDialog = ({ show, onAdd, onCancel }) => {
             leaveFrom="opacity-50"
             leaveTo="opacity-0"
           >
-            <Dialog.Overlay className="fixed inset-0 bg-black opacity-70" />
+            <Dialog.Overlay className="fixed inset-0 bg-black opacity-70 -z-10" />
           </Transition.Child>
 
           <span
@@ -66,7 +66,7 @@ let AddZoneDialog = ({ show, onAdd, onCancel }) => {
                 <button
                   type="button"
                   className="w-full inline-flex justify-center px-4 py-2 text-sm font-medium text-green-900 bg-green-100 border border-transparent rounded-md hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500"
-                  onClick={() => onAdd()}
+                  onClick={() => onAdd(zoneName)}
                 >
                   Add
                 </button>
