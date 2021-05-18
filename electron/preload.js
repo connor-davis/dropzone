@@ -1,23 +1,12 @@
 let { ipcRenderer } = require('electron');
 
-window.joinChannel = (channel) => {
-    ipcRenderer.send('connect', channel);
-};
-
-window.disconnect = () => {
-    ipcRenderer.send('disconnect');
-};
-
-window.uploadFile = (packet) => {
-    ipcRenderer.send('upload', packet);
-};
-
-window.sendMessage = (packet) => {
-    ipcRenderer.send('message', packet);
+window.send = (type, packet) => {
+  ipcRenderer.send(type, packet);
 };
 
 window.on = (type, callback) => {
-    ipcRenderer.on(type, (event, packet) => {
-        callback(packet);
-    });
+  ipcRenderer.on(type, (event, packet) => {
+    console.log(type, packet);
+    callback(packet);
+  });
 };

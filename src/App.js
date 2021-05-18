@@ -1,112 +1,30 @@
-import React, { useCallback, useEffect } from 'react';
-import {
-    addDownload,
-    completedDownload,
-    downloadProgress,
-    getDownloads,
-} from './app/slices/downloads';
-import {
-    addUpload,
-    completedUpload,
-    getUploads,
-    uploadProgress,
-} from './app/slices/uploads';
+/* eslint-disable react-hooks/exhaustive-deps */
+
+import React, { useEffect } from 'react';
+import { getUserInfo, setUser } from './app/slices/user';
 import { useDispatch, useSelector } from 'react-redux';
 
+import CreateProfilePage from './app/pages/profile/create';
 import HomePage from './app/pages/home';
-import JoinPage from './app/pages/join';
-import { addMessage } from './app/slices/messages';
-import { getUserInfo } from './app/slices/user';
-import store from './app/store';
+import Navbar from './app/components/navbar';
 
 let App = () => {
-    let dispatch = useDispatch();
-    let user = useSelector(getUserInfo);
+  let dispatch = useDispatch();
 
-    let listenPackets = useCallback(() => {
-        /**
-         * Packets Sent By DropZone
-         */
-        window.on('packet', (packet) => {
-            let uploads = getUploads(store.getState());
-            let downloads = getDownloads(store.getState());
+  let user = useSelector(getUserInfo);
 
-            switch (packet.type) {
-                /**
-                 * Information Sent By DropZone
-                 */
-                case 'info':
-                    console.log(packet.message);
-                    break;
+  useEffect(() => {
+    window.send('getProfile');
+    window.on('profileData', (profile) => dispatch(setUser(profile)));
+  }, []);
 
-                /**
-                 * Joined Channel
-                 */
-                case 'joined':
-                    alert('Joined ' + packet.channel + '.');
-                    break;
+  return (
+    <div className="flex flex-col w-screen h-screen bg-gray-100 dark:bg-black text-gray-600 dark:text-white select-none focus:outline-none">
+      <Navbar title="DropZone" width="full" />
 
-                /**
-                 * Message Packets
-                 */
-                case 'message':
-                    dispatch(addMessage(packet));
-                    break;
-
-                /**
-                 * Uploads Logic
-                 */
-                case 'start-upload':
-                    dispatch(addUpload(packet));
-                    break;
-
-                case 'progress-upload':
-                    dispatch(uploadProgress(packet));
-                    break;
-
-                case 'finish-upload':
-                    dispatch(
-                        completedUpload({
-                            ...uploads.filter(
-                                (upload) => upload.id === packet.id
-                            )[0],
-                        })
-                    );
-                    break;
-
-                /**
-                 * Downloads Logic
-                 */
-                case 'start-download':
-                    dispatch(addDownload(packet));
-                    break;
-
-                case 'progress-download':
-                    dispatch(downloadProgress(packet));
-                    break;
-
-                case 'finish-download':
-                    dispatch(
-                        completedDownload({
-                            ...downloads.filter(
-                                (download) => download.id === packet.id
-                            )[0],
-                        })
-                    );
-                    break;
-
-                default:
-                    break;
-            }
-        });
-    }, [dispatch]);
-
-    useEffect(() => {
-        window.disconnect();
-        listenPackets();
-    }, [listenPackets]);
-
-    return user.nickname ? <HomePage /> : <JoinPage />;
+      {user.userUsername ? <HomePage /> : <CreateProfilePage />}
+    </div>
+  );
 };
 
 export default App;
