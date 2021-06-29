@@ -1,0 +1,11 @@
+{
+  "folders": [
+	{
+		"path": "."
+	},
+	{
+		"path": "../dropzone-protocol"
+	}
+],
+  "settings": {}
+}
