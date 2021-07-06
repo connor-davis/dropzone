@@ -15,6 +15,12 @@ let fs = require('fs');
 
 let { ProgId, Regedit } = require('electron-regedit');
 
+let {
+  ExpressServer,
+  SocketServer,
+} = require('@connor-davis/dropzone-protocol');
+let openports = require('openports');
+
 new ProgId({
   description: 'DropZone Droplet',
   icon: 'droplet.ico',
@@ -185,28 +191,54 @@ autoUpdater.on('update-downloaded', (info) => {
   }, 500);
 });
 
-let appFolders = {
-  0: {
-    root: process.cwd(),
-    name: 'userData',
-    subFolders: {
-      0: {
-        root: `${process.cwd()}/userData`,
-        name: 'zones',
-      },
-    },
-  },
-};
+let httpNode, socketNode;
 
-let createFolders = (folders) => {
-  for (let folderIndex in folders) {
-    let folder = folders[folderIndex];
+ipcMain.on('initiateNode', async (event, args) => {
+  openports(2, (error, ports) => {
+    if (error) return console.log(error);
 
-    if (!fs.existsSync(`${folder.root}/${folder.name}`))
-      fs.mkdirSync(`${folder.root}/${folder.name}`);
+    if (!httpNode) {
+      httpNode = new ExpressServer({
+        serverKey: args.username + '.dropzoneHttpNode',
+        port: ports[0],
+      });
 
-    if (folder.subFolders) createFolders(folder.subFolders);
-  }
-};
+      httpNode.listen();
+    }
 
-createFolders(appFolders);
+    if (!socketNode) {
+      socketNode = new SocketServer({
+        serverKey: args.username + '.dropzoneSocketNode',
+        port: ports[1],
+      });
+
+      socketNode.listen();
+    }
+  });
+});
+
+// let appFolders = {
+//   0: {
+//     root: process.cwd(),
+//     name: 'userData',
+//     subFolders: {
+//       0: {
+//         root: `${process.cwd()}/userData`,
+//         name: 'zones',
+//       },
+//     },
+//   },
+// };
+
+// let createFolders = (folders) => {
+//   for (let folderIndex in folders) {
+//     let folder = folders[folderIndex];
+
+//     if (!fs.existsSync(`${folder.root}/${folder.name}`))
+//       fs.mkdirSync(`${folder.root}/${folder.name}`);
+
+//     if (folder.subFolders) createFolders(folder.subFolders);
+//   }
+// };
+
+// createFolders(appFolders);

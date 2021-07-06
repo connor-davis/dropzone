@@ -1,6 +1,7 @@
 import ProfileGuard from './components/profileGuard';
 /* eslint-disable react-hooks/exhaustive-deps */
 import React from 'react';
+import { BrowserRouter as Router } from 'react-router-dom';
 import { getTheme } from './state/theme.slice';
 import { useSelector } from 'react-redux';
 
@@ -8,11 +9,13 @@ let App = () => {
   let theme = useSelector(getTheme);
 
   return (
-    <div className={theme}>
-      <div className="flex flex-col w-screen h-screen bg-gray-100 dark:bg-black text-gray-600 dark:text-white select-none focus:outline-none">
-        <ProfileGuard />
+    <Router>
+      <div className={theme}>
+        <div className="flex flex-col w-screen h-screen bg-gray-100 dark:bg-black text-gray-600 dark:text-white select-none focus:outline-none">
+          <ProfileGuard />
+        </div>
       </div>
-    </div>
+    </Router>
   );
 };
 
