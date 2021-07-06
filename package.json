@@ -58,6 +58,7 @@
     "test": "craco test",
     "pack": "electron-builder --dir",
     "distWin": "electron-builder --win --x64",
+    "distLinux": "electron-builder --linux --x64",
     "gh-publish-win": "npm run build && electron-builder --win -p always"
   },
   "repository": "git@github.com:connor-davis/dropzone.git",

@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+
 import React, { useEffect, useState } from 'react';
 import { Route, useHistory } from 'react-router-dom';
 import { getUserInfo, setUser } from '../state/user.slice';
@@ -23,7 +25,7 @@ let ProfileGuard = ({ location }) => {
     router.push('/');
 
     if (userInfo !== {}) return window.send('initiateNode', userInfo);
-  }, []);
+  }, [userInfo]);
 
   return userInfo.username ? (
     <div className="flex flex-col w-screen h-screen">
@@ -33,10 +35,7 @@ let ProfileGuard = ({ location }) => {
         <div
           className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-yellow-600"
           onClick={() => {
-            router.goBack();
-            setTimeout(() => {
-              router.push('/messaging');
-            }, 100);
+            router.push('/messaging');
           }}
         >
           <svg
@@ -58,10 +57,7 @@ let ProfileGuard = ({ location }) => {
         <div
           className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-yellow-600"
           onClick={() => {
-            router.goBack();
-            setTimeout(() => {
-              router.push('/friendList');
-            }, 100);
+            router.push('/friendList');
           }}
         >
           <svg
@@ -110,11 +106,7 @@ let ProfileGuard = ({ location }) => {
 
         <div className="flex flex-col w-full h-full">
           <Route exact path="/messaging" component={() => <MessagingPage />} />
-          <Route
-            exact
-            path="/friendList"
-            component={() => <FriendListPage />}
-          />
+          <Route path="/friendList" component={() => <FriendListPage />} />
         </div>
       </div>
     </div>

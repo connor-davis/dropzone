@@ -11,7 +11,7 @@ let MessagingPage = () => {
       <Navbar title="Messages">
         <div
           className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-red-500"
-          onClick={() => router.goBack()}
+          onClick={() => router.push('/')}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

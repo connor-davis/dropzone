@@ -18,6 +18,8 @@ let { ProgId, Regedit } = require('electron-regedit');
 let {
   ExpressServer,
   SocketServer,
+  HttpClient,
+  SocketClient,
 } = require('@connor-davis/dropzone-protocol');
 let openports = require('openports');
 
@@ -194,27 +196,64 @@ autoUpdater.on('update-downloaded', (info) => {
 let httpNode, socketNode;
 
 ipcMain.on('initiateNode', async (event, args) => {
-  openports(2, (error, ports) => {
-    if (error) return console.log(error);
+  if (args.username)
+    openports(2, (error, ports) => {
+      if (error) return console.log(error);
 
-    if (!httpNode) {
-      httpNode = new ExpressServer({
-        serverKey: args.username + '.dropzoneHttpNode',
-        port: ports[0],
+      if (!httpNode) {
+        let { Router } = require('express');
+        let router = Router();
+
+        httpNode = new ExpressServer({
+          serverKey: args.username + '.dropzoneHttpNode',
+          port: ports[0],
+        });
+
+        router.get('/', async (request, response) => {
+          return response.status(200).json({ message: 'Hello World' });
+        });
+
+        httpNode.use(router);
+
+        httpNode.listen();
+      }
+
+      if (!socketNode) {
+        socketNode = new SocketServer({
+          serverKey: args.username + '.dropzoneSocketNode',
+          port: ports[1],
+        });
+
+        socketNode.listen();
+
+        socketNode.onConnect((socket) => {
+          socket.emit('ping');
+
+          socket.on('pong', () => console.log('Client ponged'));
+        });
+      }
+
+      ipcMain.on('performFriendRequest', async (event, args) => {
+        openports(2, async (error, ports) => {
+          let friendClient = await HttpClient({
+            serverKey: args.target.username + '.dropzoneHttpNode',
+            port: ports[0],
+          });
+
+          let friendSocketClient = await SocketClient({
+            serverKey: args.target.username + '.dropzoneSocketNode',
+            port: ports[1],
+          });
+
+          friendSocketClient.on('ping', () => {
+            friendSocketClient.emit('pong');
+            friendClient.get('/').then((response) => {
+              console.log('Response from server', response.data);
+            });
+          });
+        });
       });
-
-      httpNode.listen();
-    }
-
-    if (!socketNode) {
-      socketNode = new SocketServer({
-        serverKey: args.username + '.dropzoneSocketNode',
-        port: ports[1],
-      });
-
-      socketNode.listen();
-    }
-  });
+    });
 });
 
 // let appFolders = {
