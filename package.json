@@ -66,10 +66,6 @@
   "copyFiles": [
     {
       "from": "electron/**",
-      "to": "app/build/"
-    },
-    {
-      "from": "electron/**",
       "to": "build/"
     },
     {
@@ -117,8 +113,7 @@
       "icon": "https://cdn2.iconfinder.com/data/icons/designer-skills/128/react-256.png"
     },
     "files": [
-      "build/**/*",
-      "node_modules/electron-updater"
+      "app/**/*"
     ],
     "asar": false,
     "nsis": {
