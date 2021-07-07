@@ -113,7 +113,8 @@
       "icon": "https://cdn2.iconfinder.com/data/icons/designer-skills/128/react-256.png"
     },
     "files": [
-      "app/**/*"
+      "app/**/*",
+      "app/build/**/*"
     ],
     "asar": false,
     "nsis": {
