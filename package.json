@@ -69,7 +69,7 @@
       "to": "build/"
     },
     {
-      "from": "build/**",
+      "from": "build/**/*",
       "to": "app/build/"
     }
   ],
