@@ -16,37 +16,38 @@ let FriendRequests = () => {
 
   return (
     <>
-      {friendRequests.map((friendRequest) => (
-        <div key={friendRequest.id}>
-          {friendRequest.firstName + ' ' + friendRequest.lastName} @{' '}
-          {friendRequest.username} wants to be your friend.{' '}
-          <div className="flex items-center space-x-2">
-            <div
-              onClick={() => {
-                window.send('friendRequestAccepted', {
-                  self: userInfo,
-                  target: friendRequest,
-                });
+      {friendRequests &&
+        friendRequests.map((friendRequest) => (
+          <div key={friendRequest.id}>
+            {friendRequest.firstName + ' ' + friendRequest.lastName} @{' '}
+            {friendRequest.username} wants to be your friend.{' '}
+            <div className="flex items-center space-x-2">
+              <div
+                onClick={() => {
+                  window.send('friendRequestAccepted', {
+                    self: userInfo,
+                    target: friendRequest,
+                  });
 
-                dispatch(removeFriendRequest(friendRequest.id));
-              }}
-            >
-              accept
-            </div>
-            <div
-              onClick={() => {
-                window.send('friendRequestRejected', {
-                  target: { id: friendRequest.id },
-                });
+                  dispatch(removeFriendRequest(friendRequest.id));
+                }}
+              >
+                Accept
+              </div>
+              <div
+                onClick={() => {
+                  window.send('friendRequestRejected', {
+                    target: { id: friendRequest.id },
+                  });
 
-                dispatch(removeFriendRequest(friendRequest.id));
-              }}
-            >
-              reject
+                  dispatch(removeFriendRequest(friendRequest.id));
+                }}
+              >
+                Reject
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))}
     </>
   );
 };
