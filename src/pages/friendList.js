@@ -78,16 +78,17 @@ let FriendListPage = () => {
 
       <div className="flex w-full h-full">
         <div className="flex flex-col w-1/3 h-full border-r border-gray-300 dark:border-gray-800">
-          {friends.map((friend) => (
-            <div className="flex items-center m-1 px-1 py-2 border-b border-gray-300 dark:border-gray-800">
-              <div className="flex flex-col items-start">
-                <div className="text-sm">{`${friend.firstName} ${friend.lastName}`}</div>
-                <div className="text-xs text-gray-400 dark:text-gray-600">
-                  @{friend.username}
+          {friends &&
+            friends.map((friend) => (
+              <div className="flex items-center m-1 px-1 py-2 border-b border-gray-300 dark:border-gray-800">
+                <div className="flex flex-col items-start">
+                  <div className="text-sm">{`${friend.firstName} ${friend.lastName}`}</div>
+                  <div className="text-xs text-gray-400 dark:text-gray-600">
+                    @{friend.username}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
 
         <div className="flex flex-col w-full h-full">

@@ -35,7 +35,7 @@ let ProfileGuard = () => {
     window.on('friendRequest', (args) => dispatch(addFriendRequest(args)));
 
     setInterval(() => {
-      if (friendRequests !== [])
+      if (friendRequests)
         friendRequests.forEach((friendRequest) =>
           window.send('performFriendRequest', {
             target: { username: friendRequest.username },
