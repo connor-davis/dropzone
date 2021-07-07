@@ -14,6 +14,7 @@ let MAIN_WINDOW_ID = 'main';
 let fs = require('fs');
 
 let { ProgId, Regedit } = require('electron-regedit');
+let uuid = require('uuid');
 
 let {
   ExpressServer,
@@ -193,7 +194,9 @@ autoUpdater.on('update-downloaded', (info) => {
   }, 500);
 });
 
-let httpNode, socketNode;
+let httpNode,
+  socketNode,
+  friendRequests = {};
 
 ipcMain.on('initiateNode', async (event, args) => {
   if (args.username)
@@ -210,7 +213,7 @@ ipcMain.on('initiateNode', async (event, args) => {
         });
 
         router.get('/', async (request, response) => {
-          return response.status(200).json({ message: 'Hello World' });
+          return response.status(200).json({ self: args });
         });
 
         httpNode.use(router);
@@ -230,26 +233,57 @@ ipcMain.on('initiateNode', async (event, args) => {
           socket.emit('ping');
 
           socket.on('pong', () => console.log('Client ponged'));
+
+          socket.on('friendRequest', (packet) => {
+            let id = uuid.v4();
+
+            event.reply('friendRequest', { id, ...packet.self });
+
+            friendRequests[id] = { id, ...packet.self };
+
+            ipcMain.on('friendRequestAccepted', (event, args) => {
+              delete friendRequests[args.target.id];
+
+              event.reply('friendAdded', args.target);
+
+              socket.emit('friendRequestAccepted', { self: args.self });
+            });
+
+            ipcMain.on('friendRequestRejected', (event, args) => {
+              delete friendRequests[args.target.id];
+
+              socket.emit('friendRequestRejected');
+            });
+          });
         });
       }
 
-      ipcMain.on('performFriendRequest', async (event, args) => {
+      ipcMain.on('performFriendRequest', async (event, packet) => {
         openports(2, async (error, ports) => {
           let friendClient = await HttpClient({
-            serverKey: args.target.username + '.dropzoneHttpNode',
+            serverKey: packet.target.username + '.dropzoneHttpNode',
             port: ports[0],
           });
 
           let friendSocketClient = await SocketClient({
-            serverKey: args.target.username + '.dropzoneSocketNode',
+            serverKey: packet.target.username + '.dropzoneSocketNode',
             port: ports[1],
           });
 
-          friendSocketClient.on('ping', () => {
-            friendSocketClient.emit('pong');
+          friendSocketClient.on('ping', async () => {
+            let id = uuid.v4();
+
             friendClient.get('/').then((response) => {
-              console.log('Response from server', response.data);
+              event.reply('friendRequest', { id, ...response.data.self });
+
+              friendSocketClient.emit('friendRequest', {
+                self: packet.self,
+              });
             });
+          });
+
+          friendSocketClient.on('friendRequestAccepted', (packet) => {
+            event.reply('friendAdded', packet.self);
           });
         });
       });

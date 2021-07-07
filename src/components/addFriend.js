@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 import { getUserInfo } from '../state/user.slice';
 import { useSelector } from 'react-redux';
 
-let AddFriend = ({}) => {
+let AddFriend = () => {
   let userInfo = useSelector(getUserInfo);
   let [username, setUsername] = useState('');
+  
   return (
     <div className="flex w-full h-full justify-center items-center">
       <div className="flex flex-col w-full h-full justify-center items-center">

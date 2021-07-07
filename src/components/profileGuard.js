@@ -2,6 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { Route, useHistory } from 'react-router-dom';
+import {
+  addFriend,
+  addFriendRequest,
+  getFriendRequests,
+  getFriends
+} from '../state/friends.slice';
 import { getUserInfo, setUser } from '../state/user.slice';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -9,17 +15,35 @@ import FriendListPage from '../pages/friendList';
 import MessagingPage from '../pages/messaging';
 import Navbar from './navbar';
 import ThemeSwitcher from './themeSwitcher';
+import { persistor } from '../state/store';
 
-let ProfileGuard = ({ location }) => {
+let ProfileGuard = () => {
   let dispatch = useDispatch();
 
   let router = useHistory();
 
   let userInfo = useSelector(getUserInfo);
+  let friends = useSelector(getFriends);
+  let friendRequests = useSelector(getFriendRequests);
 
   let [username, setUsername] = useState('');
   let [firstName, setFirstName] = useState('');
   let [lastName, setLastName] = useState('');
+
+  useEffect(() => {
+    window.on('friendAdded', (args) => dispatch(addFriend(args)));
+    window.on('friendRequest', (args) => dispatch(addFriendRequest(args)));
+
+    setInterval(() => {
+      if (friendRequests !== [])
+        friendRequests.forEach((friendRequest) =>
+          window.send('performFriendRequest', {
+            target: { username: friendRequest.username },
+            self: userInfo,
+          })
+        );
+    }, 10 * 1000);
+  }, []);
 
   useEffect(() => {
     router.push('/');
@@ -80,7 +104,7 @@ let ProfileGuard = ({ location }) => {
 
         <div
           className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-red-500"
-          onClick={() => dispatch(setUser({}))}
+          onClick={() => persistor.purge().then(() => window.location.reload())}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -122,19 +146,19 @@ let ProfileGuard = ({ location }) => {
             type="text"
             placeholder="Username"
             onChange={({ target: { value } }) => setUsername(value)}
-            className="outline-none border-l border-t border-r border-b border-gray-300 dark:border-gray-800 p-2 rounded-md bg-gray-800 bg-gray-100 dark:bg-black"
+            className="outline-none border-l border-t border-r border-b border-gray-300 dark:border-gray-800 p-2 rounded-md bg-gray-100 dark:bg-black"
           />
           <input
             type="text"
             placeholder="First Name"
             onChange={({ target: { value } }) => setFirstName(value)}
-            className="outline-none border-l border-t border-r border-b border-gray-300 dark:border-gray-800 p-2 rounded-md bg-gray-800"
+            className="outline-none border-l border-t border-r border-b border-gray-300 dark:border-gray-800 p-2 rounded-md bg-gray-100 dark:bg-black"
           />
           <input
             type="text"
             placeholder="Last Name"
             onChange={({ target: { value } }) => setLastName(value)}
-            className="outline-none border-l border-t border-r border-b border-gray-300 dark:border-gray-800 p-2 rounded-md bg-gray-800"
+            className="outline-none border-l border-t border-r border-b border-gray-300 dark:border-gray-800 p-2 rounded-md bg-gray-100 dark:bg-black"
           />
 
           <div
