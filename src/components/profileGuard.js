@@ -1,20 +1,15 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 
+import { Popover, Transition } from '@headlessui/react';
 import React, { useEffect, useState } from 'react';
-import { Route, useHistory } from 'react-router-dom';
-import {
-  addFriend,
-  addFriendRequest,
-  getFriendRequests
-} from '../state/friends.slice';
 import { getUserInfo, setUser } from '../state/user.slice';
 import { useDispatch, useSelector } from 'react-redux';
 
-import FriendListPage from '../pages/friendList';
-import MessagingPage from '../pages/messaging';
 import Navbar from './navbar';
 import ThemeSwitcher from './themeSwitcher';
 import { persistor } from '../state/store';
+import { useHistory } from 'react-router-dom';
+import { v4 } from 'uuid';
 
 let ProfileGuard = () => {
   let dispatch = useDispatch();
@@ -26,65 +21,23 @@ let ProfileGuard = () => {
   let [username, setUsername] = useState('');
   let [firstName, setFirstName] = useState('');
   let [lastName, setLastName] = useState('');
-
-  useEffect(() => {
-    window.on('friendAdded', (args) => dispatch(addFriend(args)));
-    window.on('friendRequest', (args) => dispatch(addFriendRequest(args)));
-  }, []);
+  let [publicKey, setPublicKey] = useState('');
+  let [zonePublicKey, setZonePublicKey] = useState('');
 
   useEffect(() => {
     router.push('/');
 
-    if (userInfo !== {}) return window.send('initiateNode', userInfo);
+    if (userInfo !== {}) {
+      window.send('initiateNode', userInfo);
+      window.on('publicKey', (publicKey) => setPublicKey(publicKey));
+    }
   }, [userInfo]);
 
   return userInfo.username ? (
     <div className="flex flex-col w-screen h-screen">
       <Navbar>
-        <div className="text-sm">Welcome, {userInfo.firstName}</div>
-
-        <div
-          className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-yellow-600"
-          onClick={() => {
-            router.push('/messaging');
-          }}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"
-            />
-          </svg>
-        </div>
-
-        <div
-          className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-yellow-600"
-          onClick={() => {
-            router.push('/friendList');
-          }}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-            />
-          </svg>
+        <div className="text-sm">
+          Welcome, {userInfo.firstName}
         </div>
 
         <ThemeSwitcher />
@@ -111,14 +64,108 @@ let ProfileGuard = () => {
       </Navbar>
 
       <div className="flex w-screen h-full">
-        <div className="flex flex-col w-1/3 h-full border-r border-gray-300 dark:border-gray-800">
-          <Navbar title="Zones"></Navbar>
+        <div className="flex flex-col w-1/4 h-full border-r border-gray-300 dark:border-gray-800 z-1">
+          <Navbar title="Zones">
+            <Popover className="relative">
+              {({ open }) => (
+                <>
+                  <Popover.Button
+                    onClick={() => {}}
+                    className="focus:outline-none flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-green-500"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                  </Popover.Button>
+                  <Transition
+                    as={React.Fragment}
+                    enter="transition ease-out duration-200"
+                    enterFrom="opacity-0 translate-y-1"
+                    enterTo="opacity-100 translate-y-0"
+                    leave="transition ease-in duration-150"
+                    leaveFrom="opacity-100 translate-y-0"
+                    leaveTo="opacity-0 translate-y-1"
+                    show={open}
+                  >
+                    <Popover.Panel className="absolute z-10 w-auto px-4 mt-3 ">
+                      <div className="overflow-hidden rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 bg-gray-100 dark:bg-black p-2">
+                        <div className="flex w-auto h-auto space-x-2 rounded-md">
+                          <input
+                            type="text"
+                            placeholder="Zone Public Key"
+                            value={zonePublicKey}
+                            onChange={({ target: { value } }) =>
+                              setZonePublicKey(value)
+                            }
+                            className="outline-none border-l border-t border-r border-b border-gray-300 dark:border-gray-800 p-2 rounded-md bg-gray-200 dark:bg-gray-800"
+                          />
+
+                          <div
+                            className="flex justify-center items-center bg-yellow-500 text-white px-3 py-2 rounded-md cursor-pointer"
+                            onClick={() => {
+                              if (zonePublicKey !== '') {
+                              }
+                            }}
+                          >
+                            Add
+                          </div>
+                        </div>
+                      </div>
+                    </Popover.Panel>
+                  </Transition>
+                </>
+              )}
+            </Popover>
+          </Navbar>
+
+          <div className="flex justify-between items-center m-1 px-1 py-2 border-b border-gray-300 dark:border-gray-800 cursor-pointer">
+            <div className="text-sm">Your Zone</div>
+
+            <div
+              className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-yellow-600"
+              onClick={() => {
+                navigator.clipboard.writeText(publicKey).then(
+                  function () {
+                    alert(
+                      'Your public key has been copied to your clipboard. Share it with friends so they can connect.'
+                    );
+                  },
+                  function (err) {
+                    console.error('Async: Could not copy text: ', err);
+                  }
+                );
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                />
+              </svg>
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-col w-2/3 h-full">
-          <Route exact path="/messaging" component={() => <MessagingPage />} />
-          <Route path="/friendList" component={() => <FriendListPage />} />
-        </div>
+        <div className="flex flex-col w-3/4 h-full"></div>
       </div>
     </div>
   ) : (
@@ -152,7 +199,7 @@ let ProfileGuard = () => {
             className="flex justify-center items-center bg-yellow-500 text-white px-3 py-2 rounded-md cursor-pointer"
             onClick={() => {
               if (username !== '' && firstName !== '' && lastName !== '')
-                dispatch(setUser({ username, firstName, lastName }));
+                dispatch(setUser({ id: v4(), username, firstName, lastName }));
             }}
           >
             Continue

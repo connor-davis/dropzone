@@ -1,5 +1,5 @@
 let path = require('path');
-let { app, Menu, ipcMain } = require('electron');
+let { app, Menu, ipcMain, clipboard } = require('electron');
 let {
   createWindow,
   defineWindow,
@@ -14,16 +14,6 @@ let MAIN_WINDOW_ID = 'main';
 let fs = require('fs');
 
 let { ProgId, Regedit } = require('electron-regedit');
-let uuid = require('uuid');
-
-let {
-  ExpressServer,
-  SocketServer,
-  HttpClient,
-  SocketClient,
-} = require('@connor-davis/dropzone-protocol');
-let openports = require('openports');
-const { ConnectFriend } = require('./functions/friends');
 
 new ProgId({
   description: 'DropZone Droplet',
@@ -195,109 +185,41 @@ autoUpdater.on('update-downloaded', (info) => {
   }, 500);
 });
 
-let httpNode, socketNode;
+let {
+  DropZoneServer,
+  DropZoneClient,
+} = require('@connor-davis/dropzone-protocol');
+let openports = require('openports');
 
-ipcMain.on('initiateNode', async (event, args) => {
-  if (args.username)
-    openports(2, (error, ports) => {
-      if (error) return console.log(error);
+let routes = require('./routes');
 
-      if (!httpNode) {
-        let { Router } = require('express');
-        let router = Router();
-
-        httpNode = new ExpressServer({
-          serverKey: args.username + '.dropzoneHttpNode',
-          port: ports[0],
-        });
-
-        router.get('/', async (request, response) => {
-          return response.status(200).json({ self: args });
-        });
-
-        httpNode.use(router);
-
-        httpNode.listen();
-      }
-
-      if (!socketNode) {
-        socketNode = new SocketServer({
-          serverKey: args.username + '.dropzoneSocketNode',
-          port: ports[1],
-        });
-
-        socketNode.listen();
-
-        socketNode.onConnect((socket) => {
-          socket.emit('ping');
-
-          socket.on('pong', () => console.log('Client ponged'));
-
-          socket.on('friendRequest', (packet) => {
-            let id = uuid.v4();
-
-            event.reply('friendRequest', { id, ...packet.self });
-
-            ipcMain.on('friendRequestAccepted', (event, args) => {
-              event.reply('friendAdded', args.target);
-
-              socket.emit('friendRequestAccepted', { self: args.self });
-            });
-
-            ipcMain.on('friendRequestRejected', (event, args) => {
-              socket.emit('friendRequestRejected');
-            });
-          });
-        });
-      }
-    });
-});
-
-ipcMain.on('performFriendRequest', async (event, packet) => {
-  ConnectFriend(event, packet, (httpClient, socketClient) => {
-    socketClient.socket.on('ping', async () => {
-      let id = uuid.v4();
-
-      httpClient.axios.get('/').then((response) => {
-        httpClient.destroy();
-
-        event.reply('friendRequest', { id, ...response.data.self });
-
-        socketClient.socket.emit('friendRequest', {
-          self: packet.self,
-        });
-      });
+ipcMain.on('initiateNode', async (event, packet0) => {
+  openports(1, (error, ports) => {
+    let server = new DropZoneServer({
+      key: packet0.username + '.dropZoneNode',
+      port: ports[0],
     });
 
-    socketClient.socket.on('friendRequestAccepted', (packet) => {
-      event.reply('friendAdded', packet.self);
+    server.use(async (request, response, next) => {
+      request.self = packet0;
+      request.reply = (evt, data) => event.reply(evt, data);
 
-      socketClient.destroy();
+      next();
     });
 
-    socketClient.socket.on('disconnect', () => {
-      httpClient.destroy();
-      socketClient.destroy();
+    server.use(routes);
 
-      event.reply('error', {
-        reason: 'friend-request-timeout',
-        message: `Unable to add ${packet.target.username} as a friend. Reason: Disconnected.`,
-      });
-    });
+    let io = require('socket.io')(server.httpServer);
 
-    setTimeout(() => {
-      if (httpClient.axios && socketClient.socket) {
-        httpClient.destroy();
-        socketClient.destroy();
+    io.on('connection', (socket) => {});
 
-        event.reply('error', {
-          reason: 'friend-request-timeout',
-          message: `Unable to add ${packet.target.username} as a friend. Reason: Took Too Long.`,
-        });
-      }
-    }, 10 * 1000);
+    server.listen((publicKey) =>
+      event.reply('publicKey', publicKey.toString('hex'))
+    );
   });
 });
+
+// ipcMain.on('acquireFriendStatus');
 
 // let appFolders = {
 //   0: {
