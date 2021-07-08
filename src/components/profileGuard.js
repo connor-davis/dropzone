@@ -98,16 +98,9 @@ let ProfileGuard = () => {
                 onClick={() => {
                   window.send('copyPublicKey', userInfo);
 
-                  window.on('copiedPublicKey', (publicKey) => {
-                    navigator.clipboard.writeText(publicKey).then(
-                      function () {
-                        alert(
-                          'Your public key has been copied to your clipboard. Share it with friends so they can connect.'
-                        );
-                      },
-                      function (err) {
-                        console.error('Async: Could not copy text: ', err);
-                      }
+                  window.on('copiedPublicKey', () => {
+                    alert(
+                      'Your public key has been copied to your clipboard. Share it with friends so they can connect.'
                     );
                   });
                 }}

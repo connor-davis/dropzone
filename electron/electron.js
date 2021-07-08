@@ -237,7 +237,7 @@ ipcMain.on('copyPublicKey', (event, packet0) => {
   clipboard.writeText(publicKey, 'clipboard');
 
   if (clipboard.readText('clipboard') === publicKey)
-    return event.reply('copiedPublicKey');
+    return event.reply('copiedPublicKey', publicKey);
 });
 
 ipcMain.on('connectZone', async (event, packet0) => {
