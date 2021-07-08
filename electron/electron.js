@@ -192,6 +192,7 @@ let {
 let openports = require('openports');
 
 let routes = require('./routes');
+const { default: axios } = require('axios');
 
 ipcMain.on('initiateNode', async (event, packet0) => {
   openports(1, (error, ports) => {
@@ -216,6 +217,40 @@ ipcMain.on('initiateNode', async (event, packet0) => {
     server.listen((publicKey) =>
       event.reply('publicKey', publicKey.toString('hex'))
     );
+  });
+});
+
+ipcMain.on('connectZone', async (event, packet0) => {
+  openports(1, (error, ports) => {
+    let client = new DropZoneClient({
+      key: packet0.key,
+      port: ports[0],
+    });
+
+    let url = `http://localhost:${client.port}`;
+
+    axios.get(`${url}/`).then((response) => {
+      event.reply('addZone', {
+        ...response.data.self,
+        type: 'temporary',
+        publicKey: packet0.key,
+      });
+
+      axios
+        .post(`${url}/requestConnection`, packet0.userInformation)
+        .then((response) => {
+          if (response.data.success) {
+            event.reply('addZone', {
+              publicKey: client.key,
+              ...response.data.self,
+              type: 'active',
+            });
+          } else {
+            event.reply('removeZone', response.data.self.id);
+          }
+        })
+        .catch((error) => {});
+    });
   });
 });
 
