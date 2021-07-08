@@ -192,32 +192,40 @@ let {
 let openports = require('openports');
 
 let routes = require('./routes');
-const { default: axios } = require('axios');
+let { default: axios } = require('axios');
+
+let server, publicKey;
 
 ipcMain.on('initiateNode', async (event, packet0) => {
   openports(1, (error, ports) => {
-    let server = new DropZoneServer({
-      key: packet0.username + '.dropZoneNode',
-      port: ports[0],
-    });
+    if (!server) {
+      server = new DropZoneServer({
+        key: packet0.username + '.dropZoneNode',
+        port: ports[0],
+      });
 
-    server.use(async (request, response, next) => {
-      request.self = packet0;
-      request.reply = (evt, data) => event.reply(evt, data);
+      server.use(async (request, response, next) => {
+        request.self = packet0;
+        request.reply = (evt, data) => event.reply(evt, data);
 
-      next();
-    });
+        next();
+      });
 
-    server.use(routes);
+      server.use(routes);
 
-    let io = require('socket.io')(server.httpServer);
+      let io = require('socket.io')(server.httpServer);
 
-    io.on('connection', (socket) => {});
+      io.on('connection', (socket) => {});
 
-    server.listen((publicKey) =>
-      event.reply('publicKey', publicKey.toString('hex'))
-    );
+      publicKey = server.listen();
+
+      event.reply('publicKey', publicKey.toString('hex'));
+    }
   });
+});
+
+ipcMain.on('getPublicKey', (event, packet0) => {
+  event.reply('publicKey', publicKey);
 });
 
 ipcMain.on('connectZone', async (event, packet0) => {
