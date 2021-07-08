@@ -279,28 +279,28 @@ ipcMain.on('connectZone', async (event, packet0) => {
 
 // ipcMain.on('acquireFriendStatus');
 
-// let appFolders = {
-//   0: {
-//     root: process.cwd(),
-//     name: 'userData',
-//     subFolders: {
-//       0: {
-//         root: `${process.cwd()}/userData`,
-//         name: 'zones',
-//       },
-//     },
-//   },
-// };
+let appFolders = {
+  0: {
+    root: process.cwd(),
+    name: 'userData',
+    subFolders: {
+      0: {
+        root: `${process.cwd()}/userData`,
+        name: 'zones',
+      },
+    },
+  },
+};
 
-// let createFolders = (folders) => {
-//   for (let folderIndex in folders) {
-//     let folder = folders[folderIndex];
+let createFolders = (folders) => {
+  for (let folderIndex in folders) {
+    let folder = folders[folderIndex];
 
-//     if (!fs.existsSync(`${folder.root}/${folder.name}`))
-//       fs.mkdirSync(`${folder.root}/${folder.name}`);
+    if (!fs.existsSync(`${folder.root}/${folder.name}`))
+      fs.mkdirSync(`${folder.root}/${folder.name}`);
 
-//     if (folder.subFolders) createFolders(folder.subFolders);
-//   }
-// };
+    if (folder.subFolders) createFolders(folder.subFolders);
+  }
+};
 
-// createFolders(appFolders);
+createFolders(appFolders);
