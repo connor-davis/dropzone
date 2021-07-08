@@ -23,6 +23,7 @@ let {
   SocketClient,
 } = require('@connor-davis/dropzone-protocol');
 let openports = require('openports');
+const { ConnectFriend } = require('./functions/friends');
 
 new ProgId({
   description: 'DropZone Droplet',
@@ -194,9 +195,7 @@ autoUpdater.on('update-downloaded', (info) => {
   }, 500);
 });
 
-let httpNode,
-  socketNode,
-  friendRequests = {};
+let httpNode, socketNode;
 
 ipcMain.on('initiateNode', async (event, args) => {
   if (args.username)
@@ -239,55 +238,65 @@ ipcMain.on('initiateNode', async (event, args) => {
 
             event.reply('friendRequest', { id, ...packet.self });
 
-            friendRequests[id] = { id, ...packet.self };
-
             ipcMain.on('friendRequestAccepted', (event, args) => {
-              delete friendRequests[args.target.id];
-
               event.reply('friendAdded', args.target);
 
               socket.emit('friendRequestAccepted', { self: args.self });
             });
 
             ipcMain.on('friendRequestRejected', (event, args) => {
-              delete friendRequests[args.target.id];
-
               socket.emit('friendRequestRejected');
             });
           });
         });
       }
+    });
+});
 
-      ipcMain.on('performFriendRequest', async (event, packet) => {
-        openports(2, async (error, ports) => {
-          let friendClient = await HttpClient({
-            serverKey: packet.target.username + '.dropzoneHttpNode',
-            port: ports[0],
-          });
+ipcMain.on('performFriendRequest', async (event, packet) => {
+  ConnectFriend(event, packet, (httpClient, socketClient) => {
+    socketClient.socket.on('ping', async () => {
+      let id = uuid.v4();
 
-          let friendSocketClient = await SocketClient({
-            serverKey: packet.target.username + '.dropzoneSocketNode',
-            port: ports[1],
-          });
+      httpClient.axios.get('/').then((response) => {
+        httpClient.destroy();
 
-          friendSocketClient.on('ping', async () => {
-            let id = uuid.v4();
+        event.reply('friendRequest', { id, ...response.data.self });
 
-            friendClient.get('/').then((response) => {
-              event.reply('friendRequest', { id, ...response.data.self });
-
-              friendSocketClient.emit('friendRequest', {
-                self: packet.self,
-              });
-            });
-          });
-
-          friendSocketClient.on('friendRequestAccepted', (packet) => {
-            event.reply('friendAdded', packet.self);
-          });
+        socketClient.socket.emit('friendRequest', {
+          self: packet.self,
         });
       });
     });
+
+    socketClient.socket.on('friendRequestAccepted', (packet) => {
+      event.reply('friendAdded', packet.self);
+
+      socketClient.destroy();
+    });
+
+    socketClient.socket.on('disconnect', () => {
+      httpClient.destroy();
+      socketClient.destroy();
+
+      event.reply('error', {
+        reason: 'friend-request-timeout',
+        message: `Unable to add ${packet.target.username} as a friend. Reason: Disconnected.`,
+      });
+    });
+
+    setTimeout(() => {
+      if (httpClient.axios && socketClient.socket) {
+        httpClient.destroy();
+        socketClient.destroy();
+
+        event.reply('error', {
+          reason: 'friend-request-timeout',
+          message: `Unable to add ${packet.target.username} as a friend. Reason: Took Too Long.`,
+        });
+      }
+    }, 10 * 1000);
+  });
 });
 
 // let appFolders = {

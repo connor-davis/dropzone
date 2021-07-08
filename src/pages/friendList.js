@@ -14,7 +14,34 @@ let FriendListPage = () => {
 
   return (
     <>
-      <Navbar title="Friends">
+      <Navbar
+        title="Friends"
+        BackButton={() => (
+          <>
+            {window.location.pathname.length > '/friendList'.length && (
+              <div
+                className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-yellow-600"
+                onClick={() => router.push('/friendList')}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 16l-4-4m0 0l4-4m-4 4h18"
+                  />
+                </svg>
+              </div>
+            )}
+          </>
+        )}
+      >
         <div
           className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-green-500"
           onClick={() => router.push('/friendList/addFriend')}
@@ -36,7 +63,7 @@ let FriendListPage = () => {
         </div>
 
         <div
-          className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-green-500"
+          className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-yellow-600"
           onClick={() => router.push('/friendList/friendRequests')}
         >
           <svg
@@ -77,21 +104,26 @@ let FriendListPage = () => {
       </Navbar>
 
       <div className="flex w-full h-full">
-        <div className="flex flex-col w-1/3 h-full border-r border-gray-300 dark:border-gray-800">
-          {friends &&
-            friends.map((friend) => (
-              <div className="flex items-center m-1 px-1 py-2 border-b border-gray-300 dark:border-gray-800">
-                <div className="flex flex-col items-start">
-                  <div className="text-sm">{`${friend.firstName} ${friend.lastName}`}</div>
-                  <div className="text-xs text-gray-400 dark:text-gray-600">
-                    @{friend.username}
-                  </div>
-                </div>
-              </div>
-            ))}
-        </div>
-
         <div className="flex flex-col w-full h-full">
+          <Route
+            exact
+            path="/friendList"
+            component={() => (
+              <>
+                {friends &&
+                  friends.map((friend) => (
+                    <div className="flex items-center m-1 px-1 py-2 border-b border-gray-300 dark:border-gray-800">
+                      <div className="flex flex-col items-start">
+                        <div className="text-sm">{`${friend.firstName} ${friend.lastName}`}</div>
+                        <div className="text-xs text-gray-400 dark:text-gray-600">
+                          @{friend.username}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </>
+            )}
+          />
           <Route
             path="/friendList/addFriend"
             component={(props) => <AddFriend {...props} />}

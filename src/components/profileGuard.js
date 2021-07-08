@@ -5,8 +5,7 @@ import { Route, useHistory } from 'react-router-dom';
 import {
   addFriend,
   addFriendRequest,
-  getFriendRequests,
-  getFriends
+  getFriendRequests
 } from '../state/friends.slice';
 import { getUserInfo, setUser } from '../state/user.slice';
 import { useDispatch, useSelector } from 'react-redux';
@@ -23,8 +22,6 @@ let ProfileGuard = () => {
   let router = useHistory();
 
   let userInfo = useSelector(getUserInfo);
-  let friends = useSelector(getFriends);
-  let friendRequests = useSelector(getFriendRequests);
 
   let [username, setUsername] = useState('');
   let [firstName, setFirstName] = useState('');
@@ -33,16 +30,6 @@ let ProfileGuard = () => {
   useEffect(() => {
     window.on('friendAdded', (args) => dispatch(addFriend(args)));
     window.on('friendRequest', (args) => dispatch(addFriendRequest(args)));
-
-    setInterval(() => {
-      if (friendRequests)
-        friendRequests.forEach((friendRequest) =>
-          window.send('performFriendRequest', {
-            target: { username: friendRequest.username },
-            self: userInfo,
-          })
-        );
-    }, 10 * 1000);
   }, []);
 
   useEffect(() => {
@@ -124,11 +111,11 @@ let ProfileGuard = () => {
       </Navbar>
 
       <div className="flex w-screen h-full">
-        <div className="flex flex-col w-64 h-full border-r border-gray-300 dark:border-gray-800">
+        <div className="flex flex-col w-1/3 h-full border-r border-gray-300 dark:border-gray-800">
           <Navbar title="Zones"></Navbar>
         </div>
 
-        <div className="flex flex-col w-full h-full">
+        <div className="flex flex-col w-2/3 h-full">
           <Route exact path="/messaging" component={() => <MessagingPage />} />
           <Route path="/friendList" component={() => <FriendListPage />} />
         </div>
@@ -146,19 +133,19 @@ let ProfileGuard = () => {
             type="text"
             placeholder="Username"
             onChange={({ target: { value } }) => setUsername(value)}
-            className="outline-none border-l border-t border-r border-b border-gray-300 dark:border-gray-800 p-2 rounded-md bg-gray-100 dark:bg-black"
+            className="outline-none border-l border-t border-r border-b border-gray-300 dark:border-gray-800 p-2 rounded-md bg-gray-200 dark:bg-gray-800"
           />
           <input
             type="text"
             placeholder="First Name"
             onChange={({ target: { value } }) => setFirstName(value)}
-            className="outline-none border-l border-t border-r border-b border-gray-300 dark:border-gray-800 p-2 rounded-md bg-gray-100 dark:bg-black"
+            className="outline-none border-l border-t border-r border-b border-gray-300 dark:border-gray-800 p-2 rounded-md bg-gray-200 dark:bg-gray-800"
           />
           <input
             type="text"
             placeholder="Last Name"
             onChange={({ target: { value } }) => setLastName(value)}
-            className="outline-none border-l border-t border-r border-b border-gray-300 dark:border-gray-800 p-2 rounded-md bg-gray-100 dark:bg-black"
+            className="outline-none border-l border-t border-r border-b border-gray-300 dark:border-gray-800 p-2 rounded-md bg-gray-200 dark:bg-gray-800"
           />
 
           <div
