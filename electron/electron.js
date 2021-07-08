@@ -230,7 +230,8 @@ ipcMain.on('initiateNode', async (event, packet0) => {
 
 ipcMain.on('copyPublicKey', (event, packet0) => {
   let publicKey = fs.readFileSync(
-    `${process.cwd()}/userData/publicKey.droplet`
+    `${process.cwd()}/userData/publicKey.droplet`,
+    { encoding: 'utf8' }
   );
 
   clipboard.writeText(publicKey, 'clipboard');

@@ -26,7 +26,6 @@ let ProfileGuard = () => {
   let [username, setUsername] = useState('');
   let [firstName, setFirstName] = useState('');
   let [lastName, setLastName] = useState('');
-  let [publicKey, setPublicKey] = useState('');
 
   useEffect(() => {
     router.push('/');
@@ -34,7 +33,6 @@ let ProfileGuard = () => {
     if (userInfo !== {}) {
       window.send('initiateNode', userInfo);
 
-      window.on('publicKey', (publicKey) => setPublicKey(publicKey));
       window.on('zoneRequest', (packet) => dispatch(addZoneRequest(packet)));
       window.on('addZone', (packet) => dispatch(addZone(packet)));
       window.on('removeZone', (packet) => dispatch(removeZone(packet)));
@@ -100,7 +98,7 @@ let ProfileGuard = () => {
                 onClick={() => {
                   window.send('copyPublicKey', userInfo);
 
-                  window.on('copiedPublicKey', () => {
+                  window.on('copiedPublicKey', (publicKey) => {
                     navigator.clipboard.writeText(publicKey).then(
                       function () {
                         alert(
