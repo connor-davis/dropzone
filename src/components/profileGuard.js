@@ -98,9 +98,9 @@ let ProfileGuard = () => {
               <div
                 className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-yellow-600"
                 onClick={() => {
-                  window.send('getPublicKey', userInfo);
+                  window.send('copyPublicKey', userInfo);
 
-                  setTimeout(() => {
+                  window.on('copiedPublicKey', () => {
                     navigator.clipboard.writeText(publicKey).then(
                       function () {
                         alert(
@@ -111,7 +111,7 @@ let ProfileGuard = () => {
                         console.error('Async: Could not copy text: ', err);
                       }
                     );
-                  }, 200);
+                  });
                 }}
                 data-for="zone-share"
                 data-tip="Share Zone"

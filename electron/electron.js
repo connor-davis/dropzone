@@ -220,24 +220,19 @@ ipcMain.on('initiateNode', async (event, packet0) => {
       io.on('connection', (socket) => {});
 
       server.listen();
-
-      event.reply(
-        'publicKey',
-        crypto
-          .keyPair(crypto.data(Buffer.from(packet0.username + '.dropZoneNode')))
-          .publicKey.toString('hex')
-      );
     }
   });
 });
 
-ipcMain.on('getPublicKey', (event, packet0) => {
-  event.reply(
-    'publicKey',
-    crypto
-      .keyPair(crypto.data(Buffer.from(packet0.username + '.dropZoneNode')))
-      .publicKey.toString('hex')
-  );
+ipcMain.on('copyPublicKey', (event, packet0) => {
+  let publicKey = crypto
+    .keyPair(crypto.data(Buffer.from(packet0.username + '.dropZoneNode')))
+    .publicKey.toString('hex');
+
+  clipboard.writeText(publicKey, 'clipboard');
+
+  if (clipboard.readText('clipboard') === publicKey)
+    return event.reply('copiedPublicKey');
 });
 
 ipcMain.on('connectZone', async (event, packet0) => {
