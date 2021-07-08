@@ -52,7 +52,7 @@
     "start": "concurrently \"npm run react-start\" \"npm run electron-test\"",
     "electron-test": "wait-on http://localhost:3000/ && cross-env NODE_ENV=development npm run electron-start",
     "build": "npm run react-build",
-    "copyFiles": "copyBuild && copyBuild",
+    "copyFiles": "yarn copyBuild && yarn copyBuild",
     "copyBuild": "copy-files-from-to && copy-files-from-to",
     "electron-start": "electron .",
     "electron-dev": "electron ./app/build/electron",
