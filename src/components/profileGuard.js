@@ -1,5 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 
+import * as crypto from 'hypercore-crypto';
+
 import React, { useEffect, useState } from 'react';
 import { addZone, getZones, removeZone } from '../state/zones.slice';
 import { getUserInfo, setUser } from '../state/user.slice';
@@ -96,13 +98,21 @@ let ProfileGuard = () => {
               <div
                 className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-yellow-600"
                 onClick={() => {
-                  window.send('copyPublicKey', userInfo);
-
-                  window.on('copiedPublicKey', () => {
-                    alert(
-                      'Your public key has been copied to your clipboard. Share it with friends so they can connect.'
-                    );
-                  });
+                  navigator.clipboard
+                    .writeText(
+                      crypto
+                        .keyPair(
+                          crypto.data(
+                            Buffer.from(userInfo.username + '.dropZoneNode')
+                          )
+                        )
+                        .publicKey.toString('hex')
+                    )
+                    .then(() => {
+                      alert(
+                        'Your public key has been copied to your clipboard. Share it with friends so they can connect.'
+                      );
+                    });
                 }}
                 data-for="zone-share"
                 data-tip="Share Zone"

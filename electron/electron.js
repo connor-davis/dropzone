@@ -217,27 +217,7 @@ ipcMain.on('initiateNode', async (event, packet0) => {
     io.on('connection', (socket) => {});
 
     server.listen();
-
-    fs.writeFileSync(
-      `${process.cwd()}/userData/publicKey.droplet`,
-      crypto
-        .keyPair(crypto.data(Buffer.from(packet0.username + '.dropZoneNode')))
-        .publicKey.toString('hex'),
-      { encoding: 'utf8' }
-    );
   });
-});
-
-ipcMain.on('copyPublicKey', (event, packet0) => {
-  let publicKey = fs.readFileSync(
-    `${process.cwd()}/userData/publicKey.droplet`,
-    { encoding: 'utf8' }
-  );
-
-  clipboard.writeText(publicKey, 'clipboard');
-
-  if (clipboard.readText('clipboard') === publicKey)
-    return event.reply('copiedPublicKey', publicKey);
 });
 
 ipcMain.on('connectZone', async (event, packet0) => {
