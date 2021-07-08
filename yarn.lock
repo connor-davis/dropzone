@@ -1147,10 +1147,10 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@connor-davis/dropzone-protocol@1.1.2":
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/@connor-davis/dropzone-protocol/-/dropzone-protocol-1.1.2.tgz#b9aee1dce976802c8081254849bc85ecd1deeba5"
-  integrity sha512-yjCW4L1kS0Bkm95mmzeaqZbK4HDlmU1Tcw59xRHAs5Np/1+Y08C9RXQb37wHWvPE0WM4RANyHib3dJpulF1eGw==
+"@connor-davis/dropzone-protocol@1.1.3":
+  version "1.1.3"
+  resolved "https://registry.yarnpkg.com/@connor-davis/dropzone-protocol/-/dropzone-protocol-1.1.3.tgz#fc11aa9d2e62407707ac994f19c05577eb9bc0f9"
+  integrity sha512-wFwM4mw9JidJOhM1a3Fxa3cPWgmsVl73bBzOjDj6htXP5TpPxDAiklG7iOCsKtQZGW8aXgAbHiS28jYc5YZtDA==
   dependencies:
     "@types/axios" "^0.14.0"
     axios "^0.21.1"
