@@ -196,39 +196,35 @@ let { default: axios } = require('axios');
 
 let crypto = require('hypercore-crypto');
 
-let server;
-
 ipcMain.on('initiateNode', async (event, packet0) => {
   openports(1, (error, ports) => {
-    if (!server) {
-      server = new DropZoneServer({
-        key: packet0.username + '.dropZoneNode',
-        port: ports[0],
-      });
+    let server = new DropZoneServer({
+      key: packet0.username + '.dropZoneNode',
+      port: ports[0],
+    });
 
-      server.use(async (request, response, next) => {
-        request.self = packet0;
-        request.reply = (evt, data) => event.reply(evt, data);
+    server.use(async (request, response, next) => {
+      request.self = packet0;
+      request.reply = (evt, data) => event.reply(evt, data);
 
-        next();
-      });
+      next();
+    });
 
-      server.use(routes);
+    server.use(routes);
 
-      let io = require('socket.io')(server.httpServer);
+    let io = require('socket.io')(server.httpServer);
 
-      io.on('connection', (socket) => {});
+    io.on('connection', (socket) => {});
 
-      server.listen();
+    server.listen();
 
-      fs.writeFileSync(
-        `${process.cwd()}/userData/publicKey.droplet`,
-        crypto
-          .keyPair(crypto.data(Buffer.from(packet0.username + '.dropZoneNode')))
-          .publicKey.toString('hex'),
-        { encoding: 'utf8' }
-      );
-    }
+    fs.writeFileSync(
+      `${process.cwd()}/userData/publicKey.droplet`,
+      crypto
+        .keyPair(crypto.data(Buffer.from(packet0.username + '.dropZoneNode')))
+        .publicKey.toString('hex'),
+      { encoding: 'utf8' }
+    );
   });
 });
 
