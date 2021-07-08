@@ -194,7 +194,9 @@ let openports = require('openports');
 let routes = require('./routes');
 let { default: axios } = require('axios');
 
-let server, publicKey;
+let crypto = require('hypercore-crypto');
+
+let server;
 
 ipcMain.on('initiateNode', async (event, packet0) => {
   openports(1, (error, ports) => {
@@ -217,15 +219,25 @@ ipcMain.on('initiateNode', async (event, packet0) => {
 
       io.on('connection', (socket) => {});
 
-      publicKey = server.listen();
+      server.listen();
 
-      event.reply('publicKey', publicKey.toString('hex'));
+      event.reply(
+        'publicKey',
+        crypto
+          .keyPair(crypto.data(Buffer.from(packet0.username + '.dropZoneNode')))
+          .publicKey.toString('hex')
+      );
     }
   });
 });
 
 ipcMain.on('getPublicKey', (event, packet0) => {
-  event.reply('publicKey', publicKey);
+  event.reply(
+    'publicKey',
+    crypto
+      .keyPair(crypto.data(Buffer.from(packet0.username + '.dropZoneNode')))
+      .publicKey.toString('hex')
+  );
 });
 
 ipcMain.on('connectZone', async (event, packet0) => {

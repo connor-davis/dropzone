@@ -98,18 +98,20 @@ let ProfileGuard = () => {
               <div
                 className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-yellow-600"
                 onClick={() => {
-                  window.send('getPublicKey');
+                  window.send('getPublicKey', userInfo);
 
-                  navigator.clipboard.writeText(publicKey).then(
-                    function () {
-                      alert(
-                        'Your public key has been copied to your clipboard. Share it with friends so they can connect.'
-                      );
-                    },
-                    function (err) {
-                      console.error('Async: Could not copy text: ', err);
-                    }
-                  );
+                  setTimeout(() => {
+                    navigator.clipboard.writeText(publicKey).then(
+                      function () {
+                        alert(
+                          'Your public key has been copied to your clipboard. Share it with friends so they can connect.'
+                        );
+                      },
+                      function (err) {
+                        console.error('Async: Could not copy text: ', err);
+                      }
+                    );
+                  }, 200);
                 }}
                 data-for="zone-share"
                 data-tip="Share Zone"

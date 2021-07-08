@@ -6,7 +6,7 @@
   "main": "electron/electron.js",
   "homepage": "./",
   "dependencies": {
-    "@connor-davis/dropzone-protocol": "^1.1.8",
+    "@connor-davis/dropzone-protocol": "^1.1.9",
     "@craco/craco": "^5.6.3",
     "@headlessui/react": "^1.0.0",
     "@reduxjs/toolkit": "^1.5.0",
@@ -21,6 +21,7 @@
     "events": "^3.3.0",
     "express": "^4.17.1",
     "file-saver": "^2.0.5",
+    "hypercore-crypto": "^2.3.0",
     "hyperswarm": "^2.15.3",
     "moment": "^2.29.1",
     "ndjson": "^2.0.0",
