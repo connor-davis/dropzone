@@ -1,5 +1,6 @@
-const {BrowserWindow} = require('electron');
+const { BrowserWindow } = require('electron');
 const path = require('path');
+const url = require('url');
 
 const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
 
@@ -12,16 +13,16 @@ const windows = [];
  * @returns {Electron.BrowserWindow}
  */
 function getWindow(windowId) {
-    return windows[windowId];
+  return windows[windowId];
 }
 
 /**
  * Closes all of the windows
  */
 function closeAllWindows() {
-    for (const window of windows) {
-        window.close();
-    }
+  for (const window of windows) {
+    window.close();
+  }
 }
 
 /**
@@ -30,14 +31,14 @@ function closeAllWindows() {
  * @returns {string|null}
  */
 function getWindowId() {
-    if (window) {
-        for (const arg of window.process.argv) {
-            if (/--window-id/.test(arg)) {
-                return arg.split('=')[1];
-            }
-        }
+  if (window) {
+    for (const arg of window.process.argv) {
+      if (/--window-id/.test(arg)) {
+        return arg.split('=')[1];
+      }
     }
-    return null;
+  }
+  return null;
 }
 
 /**
@@ -49,38 +50,41 @@ function getWindowId() {
  * @returns {Electron.BrowserWindow}
  */
 function defineWindow(windowId, options = {}) {
-    if (!options.webPreferences) {
-        options.webPreferences = {};
-    }
-    if (!options.webPreferences.additionalArguments) {
-        options.webPreferences.additionalArguments = [];
-    }
-    const windowOptions = {
-        ...options,
-        webPreferences: {
-            ...options.webPreferences,
-            additionalArguments: [
-                ...options.webPreferences.additionalArguments,
-                `--window-id=${windowId}`]
-        }
-    };
-    const window = new BrowserWindow(windowOptions);
+  if (!options.webPreferences) {
+    options.webPreferences = {};
+  }
+  if (!options.webPreferences.additionalArguments) {
+    options.webPreferences.additionalArguments = [];
+  }
+  const windowOptions = {
+    ...options,
+    webPreferences: {
+      ...options.webPreferences,
+      additionalArguments: [
+        ...options.webPreferences.additionalArguments,
+        `--window-id=${windowId}`,
+      ],
+    },
+  };
+  const window = new BrowserWindow(windowOptions);
 
-    window.on('closed', () => {
-        windows[windowId] = null;
-    });
+  window.on('closed', () => {
+    windows[windowId] = null;
+  });
 
-    // register window
-    windows[windowId] = window;
+  // register window
+  windows[windowId] = window;
 
-    // attach crash listener
-    window.webContents.on('crashed', (event, killed) => {
-        console.error(
-            `Window ${windowId} ${killed ? 'was killed' : 'has crashed'}.`, event);
-        windows[windowId] = null;
-    });
+  // attach crash listener
+  window.webContents.on('crashed', (event, killed) => {
+    console.error(
+      `Window ${windowId} ${killed ? 'was killed' : 'has crashed'}.`,
+      event
+    );
+    windows[windowId] = null;
+  });
 
-    return window;
+  return window;
 }
 
 /**
@@ -91,42 +95,50 @@ function defineWindow(windowId, options = {}) {
  * @param {object} [options={}] - the electron window options
  */
 function createWindow(windowId, options = {}) {
-    const window = defineWindow(windowId, options);
+  const window = defineWindow(windowId, options);
 
-    if (IS_DEVELOPMENT) {
-        window.loadURL('http://localhost:3000').then();
+  if (IS_DEVELOPMENT) {
+    window.loadURL('http://localhost:3000').then();
 
-        // install some developer tools
-        try {
-            const {
-                default: installExtension,
-                REACT_DEVELOPER_TOOLS
-            } = require('electron-devtools-installer');
+    // install some developer tools
+    try {
+      const {
+        default: installExtension,
+        REACT_DEVELOPER_TOOLS,
+      } = require('electron-devtools-installer');
 
-            installExtension(REACT_DEVELOPER_TOOLS).catch(e => {
-                console.error('Could not install React developer tools', e);
-            });
-        } catch (e) {
-            console.error('Could not install developer extensions', e);
-        }
-    } else {
-        window.loadURL(`file://${path.join(__dirname, '/index.html')}`).then();
+      installExtension(REACT_DEVELOPER_TOOLS).catch((e) => {
+        console.error('Could not install React developer tools', e);
+      });
+    } catch (e) {
+      console.error('Could not install developer extensions', e);
     }
+  } else {
+    window
+      .loadURL(
+        url.format({
+          pathname: `${path.join(__dirname, '/index.html')}`,
+          protocol: 'file://',
+          slashes: true,
+        })
+      )
+      .then();
+  }
 
-    window.webContents.on('devtools-opened', () => {
-        window.focus();
-        setImmediate(() => {
-            window.focus();
-        });
+  window.webContents.on('devtools-opened', () => {
+    window.focus();
+    setImmediate(() => {
+      window.focus();
     });
+  });
 
-    return window;
+  return window;
 }
 
 module.exports = {
-    getWindow,
-    getWindowId,
-    defineWindow,
-    createWindow,
-    closeAllWindows
+  getWindow,
+  getWindowId,
+  defineWindow,
+  createWindow,
+  closeAllWindows,
 };
