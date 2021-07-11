@@ -48,7 +48,7 @@ let ProfileGuard = () => {
           zone.zoneOwner.username !== userInfo.username
         )
           window.send('connectKnownZone', {
-            key: zone.publicKey,
+            key: zone.zoneOwner.publicKey,
             self: userInfo,
           });
       });
@@ -103,7 +103,13 @@ let ProfileGuard = () => {
           </Navbar>
 
           <div className="flex flex-col w-full h-full overflow-y-auto">
-            <Link to="/zone/connordvs">
+            <Link
+              to={`/zone/${crypto
+                .keyPair(
+                  crypto.data(Buffer.from(userInfo.username + '.dropZoneNode'))
+                )
+                .publicKey.toString('hex')}`}
+            >
               <div className="flex justify-between items-center m-1 px-1 py-2 border-b border-gray-300 dark:border-gray-800 cursor-pointer">
                 <div className="flex flex-col">
                   <div className="text-sm">
@@ -163,11 +169,12 @@ let ProfileGuard = () => {
             <List
               items={zones.map((zone) => {
                 return {
-                  title: `${zone.firstName || 'Not'} ${
-                    zone.lastName || 'Connected'
+                  title: `${zone.zoneOwner.firstName || 'Not'} ${
+                    zone.zoneOwner.lastName || 'Connected'
                   }`,
-                  subtitle: `${zone.username}`,
-                  enabled: zone.type === 'temporary',
+                  subtitle: `${zone.zoneOwner.username}`,
+                  enabled: zone.zoneOwner.type === 'temporary',
+                  link: `/zone/${zone.zoneOwner.publicKey}`,
                 };
               })}
               disabledText="Zone Not Connected"

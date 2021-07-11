@@ -18,9 +18,9 @@ let ZonePage = ({}) => {
   let [renamingItemValue, setRenamingItemValue] = useState('');
 
   useEffect(() => {
-    let username = router.location.pathname.split('/')[2];
+    let publicKey = router.location.pathname.split('/')[2];
 
-    window.send('getUserZone', { username });
+    window.send('getUserZone', { publicKey });
 
     window.on('userZone', (zone) => {
       setZone(zone);

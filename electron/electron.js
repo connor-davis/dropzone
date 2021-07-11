@@ -196,7 +196,8 @@ let { default: axios } = require('axios');
 
 let crypto = require('hypercore-crypto');
 
-let peers = {};
+let selfPublicKey,
+  peers = {};
 
 ipcMain.once('initiateNode', async (event, packet0) => {
   openports(1, (error, ports) => {
@@ -216,19 +217,37 @@ ipcMain.once('initiateNode', async (event, packet0) => {
 
     let io = require('socket.io')(server.httpServer);
 
-    io.on('connection', (socket) => {
-      socket.on('onlineStatus', (packet) => {
-        peers[packet.id] = packet;
-      });
-    });
-
     server.listen();
 
-    fs.writeFileSync(
-      `${process.cwd()}/userData/zones/${packet0.username}.dropzone`,
-      JSON.stringify({ zoneOwner: packet0, zoneFileStructure: [] }),
-      { encoding: 'utf8' }
-    );
+    setTimeout(() => {
+      selfPublicKey = server.publicKey.toString('hex');
+
+      fs.writeFileSync(
+        `${process.cwd()}/userData/zones/${selfPublicKey}.dropzone`,
+        JSON.stringify({ zoneOwner: packet0, zoneFileStructure: [] }),
+        { encoding: 'utf8' }
+      );
+
+      if (selfPublicKey) {
+        io.on('connection', (socket) => {
+          socket.on('onlineStatus', (packet1) => {
+            ipcMain.on('setUserZone', (event, packet2) => {
+              socket.emit(`${selfPublicKey}.dropzone.update`, packet2);
+            });
+          });
+
+          socket.on(`${selfPublicKey}.dropzone.update`, (packet1) => {
+            event.reply('userZone', packet1);
+
+            return fs.writeFileSync(
+              `${process.cwd()}/userData/zones/${selfPublicKey}.dropzone`,
+              JSON.stringify(packet1),
+              { encoding: 'utf8' }
+            );
+          });
+        });
+      }
+    }, 500);
   });
 });
 
@@ -241,11 +260,18 @@ ipcMain.on('connectUnknownZone', async (event, packet0) => {
 
     let url = `http://localhost:${client.port}`;
 
+    let socketClient = require('socket.io-client')(url);
+
+    socketClient.emit('onlineStatus', packet0.self);
+
     axios.get(`${url}/`).then((response) => {
       event.reply('addZone', {
-        ...response.data.self,
-        type: 'temporary',
-        publicKey: packet0.key,
+        zoneOwner: {
+          ...response.data.self,
+          type: 'temporary',
+          publicKey: packet0.key,
+        },
+        zoneFileStructure: [],
       });
 
       axios
@@ -254,7 +280,7 @@ ipcMain.on('connectUnknownZone', async (event, packet0) => {
           if (response.data.success) {
             event.reply('addZone', {
               zoneOwner: {
-                publicKey: client.key,
+                publicKey: packet0.key,
                 ...response.data.self,
                 type: 'active',
               },
@@ -262,12 +288,10 @@ ipcMain.on('connectUnknownZone', async (event, packet0) => {
             });
 
             fs.writeFileSync(
-              `${process.cwd()}/userData/zones/${
-                response.data.self.username
-              }.dropzone`,
+              `${process.cwd()}/userData/zones/${packet0.key}.dropzone`,
               JSON.stringify({
                 zoneOwner: {
-                  publicKey: client.key,
+                  publicKey: packet0.key,
                   ...response.data.self,
                   type: 'active',
                 },
@@ -285,20 +309,23 @@ ipcMain.on('connectUnknownZone', async (event, packet0) => {
 });
 
 ipcMain.on('setUserZone', (event, packet0) => {
-  if (packet0.zoneOwner.username) {
-    event.reply('userZone', packet0);
-    return fs.writeFileSync(
-      `${process.cwd()}/userData/zones/${packet0.zoneOwner.username}.dropzone`,
-      JSON.stringify(packet0),
-      { encoding: 'utf8' }
-    );
-  }
+  event.reply('userZone', packet0);
+
+  return fs.writeFileSync(
+    `${process.cwd()}/userData/zones/${
+      packet0.zoneOwner.publicKey || selfPublicKey
+    }.dropzone`,
+    JSON.stringify(packet0),
+    { encoding: 'utf8' }
+  );
 });
 
 ipcMain.on('getUserZone', (event, packet0) => {
   let userZone = JSON.parse(
     fs.readFileSync(
-      `${process.cwd()}/userData/zones/${packet0.username}.dropzone`,
+      `${process.cwd()}/userData/zones/${
+        packet0.publicKey || selfPublicKey
+      }.dropzone`,
       { encoding: 'utf8' }
     )
   );
@@ -306,7 +333,7 @@ ipcMain.on('getUserZone', (event, packet0) => {
   event.reply('userZone', userZone);
 });
 
-ipcMain.on('connectKnownNode', (event, packet0) => {
+ipcMain.on('connectKnownZone', (event, packet0) => {
   openports(1, (error, ports) => {
     let client = new DropZoneClient({
       key: packet0.key,
@@ -318,6 +345,22 @@ ipcMain.on('connectKnownNode', (event, packet0) => {
     let socketClient = require('socket.io-client')(url);
 
     socketClient.emit('onlineStatus', packet0.self);
+
+    socketClient.on(`${packet0.key}.dropzone.update`, (packet1) => {
+      event.reply('userZone', packet1);
+
+      return fs.writeFileSync(
+        `${process.cwd()}/userData/zones/${
+          packet1.zoneOwner.publicKey
+        }.dropzone`,
+        JSON.stringify(packet1),
+        { encoding: 'utf8' }
+      );
+    });
+
+    ipcMain.on('setUserZone', (event, packet1) => {
+      socketClient.emit(`${packet0.key}.dropzone.update`, packet1);
+    });
   });
 });
 
