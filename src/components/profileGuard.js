@@ -166,19 +166,21 @@ let ProfileGuard = () => {
               </div>
             </Link>
 
-            <List
-              items={zones.map((zone) => {
-                return {
-                  title: `${zone.zoneOwner.firstName || 'Not'} ${
-                    zone.zoneOwner.lastName || 'Connected'
-                  }`,
-                  subtitle: `${zone.zoneOwner.username}`,
-                  enabled: zone.zoneOwner.type === 'temporary',
-                  link: `/zone/${zone.zoneOwner.publicKey}`,
-                };
-              })}
-              disabledText="Zone Not Connected"
-            />
+            {zones && zones.length > 0 && (
+              <List
+                items={zones.map((zone) => {
+                  return {
+                    title: `${zone.zoneOwner.firstName || 'Not'} ${
+                      zone.zoneOwner.lastName || 'Connected'
+                    }`,
+                    subtitle: `${zone.zoneOwner.username}`,
+                    enabled: zone.zoneOwner.type === 'temporary',
+                    link: `/zone/${zone.zoneOwner.publicKey}`,
+                  };
+                })}
+                disabledText="Zone Not Connected"
+              />
+            )}
           </div>
         </div>
 
