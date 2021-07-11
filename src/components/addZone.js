@@ -1,9 +1,9 @@
 import { Popover, Transition } from '@headlessui/react';
 import React, { useState } from 'react';
-
+import { useSelector } from 'react-redux';
 import ReactTooltip from 'react-tooltip';
 import { getUserInfo } from '../state/user.slice';
-import { useSelector } from 'react-redux';
+
 
 let AddZone = () => {
   let userInfo = useSelector(getUserInfo);
@@ -77,7 +77,7 @@ let AddZone = () => {
                     className="flex justify-center items-center bg-yellow-500 text-white px-3 py-2 rounded-md cursor-pointer"
                     onClick={() => {
                       if (zonePublicKey !== '') {
-                        window.send('connectZone', {
+                        window.send('connectUnknownZone', {
                           key: zonePublicKey,
                           userInformation: userInfo,
                         });

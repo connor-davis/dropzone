@@ -1,10 +1,11 @@
+import BackButton from './backButton';
 import React from 'react';
 
-let Navbar = ({ title, BackButton, children }) => {
+let Navbar = ({ title, backButton, children }) => {
   return (
     <div className="flex justify-between items-center border-b border-gray-300 dark:border-gray-800 px-2 py-1">
       <div className="text-lg flex">
-        {BackButton !== undefined && (
+        {backButton && (
           <div className="mr-2">
             <BackButton />
           </div>

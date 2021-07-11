@@ -196,7 +196,9 @@ let { default: axios } = require('axios');
 
 let crypto = require('hypercore-crypto');
 
-ipcMain.on('initiateNode', async (event, packet0) => {
+let peers = {};
+
+ipcMain.once('initiateNode', async (event, packet0) => {
   openports(1, (error, ports) => {
     let server = new DropZoneServer({
       key: packet0.username + '.dropZoneNode',
@@ -214,13 +216,23 @@ ipcMain.on('initiateNode', async (event, packet0) => {
 
     let io = require('socket.io')(server.httpServer);
 
-    io.on('connection', (socket) => {});
+    io.on('connection', (socket) => {
+      socket.on('onlineStatus', (packet) => {
+        peers[packet.id] = packet;
+      });
+    });
 
     server.listen();
+
+    fs.writeFileSync(
+      `${process.cwd()}/userData/zones/${packet0.username}.dropzone`,
+      JSON.stringify({ zoneOwner: packet0, zoneFileStructure: [] }),
+      { encoding: 'utf8' }
+    );
   });
 });
 
-ipcMain.on('connectZone', async (event, packet0) => {
+ipcMain.on('connectUnknownZone', async (event, packet0) => {
   openports(1, (error, ports) => {
     let client = new DropZoneClient({
       key: packet0.key,
@@ -241,16 +253,71 @@ ipcMain.on('connectZone', async (event, packet0) => {
         .then((response) => {
           if (response.data.success) {
             event.reply('addZone', {
-              publicKey: client.key,
-              ...response.data.self,
-              type: 'active',
+              zoneOwner: {
+                publicKey: client.key,
+                ...response.data.self,
+                type: 'active',
+              },
+              zoneFileStructure: [],
             });
+
+            fs.writeFileSync(
+              `${process.cwd()}/userData/zones/${
+                response.data.self.username
+              }.dropzone`,
+              JSON.stringify({
+                zoneOwner: {
+                  publicKey: client.key,
+                  ...response.data.self,
+                  type: 'active',
+                },
+                zoneFileStructure: [],
+              }),
+              { encoding: 'utf8' }
+            );
           } else {
             event.reply('removeZone', response.data.self.id);
           }
         })
         .catch((error) => {});
     });
+  });
+});
+
+ipcMain.on('setUserZone', (event, packet0) => {
+  if (packet0.zoneOwner.username) {
+    event.reply('userZone', packet0);
+    return fs.writeFileSync(
+      `${process.cwd()}/userData/zones/${packet0.zoneOwner.username}.dropzone`,
+      JSON.stringify(packet0),
+      { encoding: 'utf8' }
+    );
+  }
+});
+
+ipcMain.on('getUserZone', (event, packet0) => {
+  let userZone = JSON.parse(
+    fs.readFileSync(
+      `${process.cwd()}/userData/zones/${packet0.username}.dropzone`,
+      { encoding: 'utf8' }
+    )
+  );
+
+  event.reply('userZone', userZone);
+});
+
+ipcMain.on('connectKnownNode', (event, packet0) => {
+  openports(1, (error, ports) => {
+    let client = new DropZoneClient({
+      key: packet0.key,
+      port: ports[0],
+    });
+
+    let url = `http://localhost:${client.port}`;
+
+    let socketClient = require('socket.io-client')(url);
+
+    socketClient.emit('onlineStatus', packet0.self);
   });
 });
 
