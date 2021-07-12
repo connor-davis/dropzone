@@ -9,7 +9,7 @@ import { useHistory } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { v4 } from 'uuid';
 
-let ZonePage = ({}) => {
+let ZonePage = ({ navbar = true }) => {
   let router = useHistory();
 
   let userInfo = useSelector(getUserInfo);
@@ -18,7 +18,9 @@ let ZonePage = ({}) => {
   let [renamingItemValue, setRenamingItemValue] = useState('');
 
   useEffect(() => {
-    let publicKey = router.location.pathname.split('/')[2];
+    let publicKey =
+      router.location.pathname.split('/')[1] ||
+      router.location.pathname.split('/')[2];
 
     window.send('getUserZone', { publicKey });
 
@@ -176,14 +178,16 @@ let ZonePage = ({}) => {
         </MenuItem> */}
       </ContextMenu>
 
-      <Navbar
-        title={
-          zone.zoneOwner.username === userInfo.username
-            ? 'Your Zone'
-            : `${zone.zoneOwner.firstName} ${zone.zoneOwner.lastName}'s Zone`
-        }
-        backButton={true}
-      ></Navbar>
+      {navbar && (
+        <Navbar
+          title={
+            zone.zoneOwner.username === userInfo.username
+              ? 'Your Zone'
+              : `${zone.zoneOwner.firstName} ${zone.zoneOwner.lastName}'s Zone`
+          }
+          backButton={true}
+        ></Navbar>
+      )}
 
       <div className="flex w-full h-full">
         <div className="flex flex-col w-2/3 h-full border-r border-gray-300 dark:border-gray-800">
@@ -384,6 +388,7 @@ let ZonePage = ({}) => {
             ></animateTransform>
           </path>
         </svg>
+        <div>{zone.message}</div>
       </div>
     </div>
   );

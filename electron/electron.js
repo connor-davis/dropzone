@@ -228,6 +228,8 @@ ipcMain.once('initiateNode', async (event, packet0) => {
         { encoding: 'utf8' }
       );
 
+      event.reply('navigate', { path: `/${selfPublicKey}` });
+
       if (selfPublicKey) {
         io.on('connection', (socket) => {
           socket.on('onlineStatus', (packet1) => {
@@ -264,41 +266,43 @@ ipcMain.on('connectUnknownZone', async (event, packet0) => {
 
     socketClient.emit('onlineStatus', packet0.self);
 
+    event.reply('userZone', { message: 'Attempting connection.' });
+
     axios.get(`${url}/`).then((response) => {
-      event.reply('addZone', {
-        zoneOwner: {
-          ...response.data.self,
-          type: 'temporary',
-          publicKey: packet0.key,
-        },
-        zoneFileStructure: [],
+      event.reply('userZone', {
+        message: `Waiting for acceptance into ${response.data.self.firstName} ${response.data.self.lastName}'s Zone.`,
       });
 
       axios
         .post(`${url}/requestConnection`, packet0.userInformation)
         .then((response) => {
           if (response.data.success) {
-            event.reply('addZone', {
-              zoneOwner: {
-                publicKey: packet0.key,
-                ...response.data.self,
-                type: 'active',
-              },
-              zoneFileStructure: [],
+            event.reply('userZone', {
+              message: 'Connection accepted. Hold on for one second.',
             });
 
-            fs.writeFileSync(
-              `${process.cwd()}/userData/zones/${packet0.key}.dropzone`,
-              JSON.stringify({
-                zoneOwner: {
-                  publicKey: packet0.key,
-                  ...response.data.self,
-                  type: 'active',
-                },
-                zoneFileStructure: [],
-              }),
-              { encoding: 'utf8' }
-            );
+            setTimeout(() => {
+              event.reply('navigate', { path: `/zone/${packet0.key}` });
+
+              setTimeout(() => {
+                event.reply('userZone', {
+                  zoneOwner: {
+                    publicKey: packet0.key,
+                    ...response.data.self,
+                    type: 'active',
+                  },
+                  zoneFileStructure: [],
+                });
+
+                socketClient.on(`${packet0.key}.dropzone.update`, (packet1) => {
+                  event.reply('userZone', packet1);
+                });
+
+                ipcMain.on('setUserZone', (event, packet1) => {
+                  socketClient.emit(`${packet0.key}.dropzone.update`, packet1);
+                });
+              }, 200);
+            }, 1000);
           } else {
             event.reply('removeZone', response.data.self.id);
           }
@@ -321,50 +325,17 @@ ipcMain.on('setUserZone', (event, packet0) => {
 });
 
 ipcMain.on('getUserZone', (event, packet0) => {
+  console.log(packet0);
+
   let userZone = JSON.parse(
     fs.readFileSync(
-      `${process.cwd()}/userData/zones/${
-        packet0.publicKey || selfPublicKey
-      }.dropzone`,
+      `${process.cwd()}/userData/zones/${selfPublicKey}.dropzone`,
       { encoding: 'utf8' }
     )
   );
 
   event.reply('userZone', userZone);
 });
-
-ipcMain.on('connectKnownZone', (event, packet0) => {
-  openports(1, (error, ports) => {
-    let client = new DropZoneClient({
-      key: packet0.key,
-      port: ports[0],
-    });
-
-    let url = `http://localhost:${client.port}`;
-
-    let socketClient = require('socket.io-client')(url);
-
-    socketClient.emit('onlineStatus', packet0.self);
-
-    socketClient.on(`${packet0.key}.dropzone.update`, (packet1) => {
-      event.reply('userZone', packet1);
-
-      return fs.writeFileSync(
-        `${process.cwd()}/userData/zones/${
-          packet1.zoneOwner.publicKey
-        }.dropzone`,
-        JSON.stringify(packet1),
-        { encoding: 'utf8' }
-      );
-    });
-
-    ipcMain.on('setUserZone', (event, packet1) => {
-      socketClient.emit(`${packet0.key}.dropzone.update`, packet1);
-    });
-  });
-});
-
-// ipcMain.on('acquireFriendStatus');
 
 let appFolders = {
   0: {

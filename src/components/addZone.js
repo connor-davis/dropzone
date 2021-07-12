@@ -1,9 +1,9 @@
 import { Popover, Transition } from '@headlessui/react';
 import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
+
 import ReactTooltip from 'react-tooltip';
 import { getUserInfo } from '../state/user.slice';
-
+import { useSelector } from 'react-redux';
 
 let AddZone = () => {
   let userInfo = useSelector(getUserInfo);
@@ -18,7 +18,7 @@ let AddZone = () => {
             onClick={() => {}}
             className="focus:outline-none flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-green-500"
             data-for="zone-add"
-            data-tip="Add Zone"
+            data-tip="Connect To Zone"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -51,7 +51,7 @@ let AddZone = () => {
             leaveTo="opacity-0 translate-y-1"
             show={open}
           >
-            <Popover.Panel className="absolute z-10 w-auto">
+            <Popover.Panel className="absolute z-10 w-auto right-1">
               <div className="overflow-hidden rounded-lg shadow-md ring-1 ring-black ring-opacity-5 bg-gray-100 dark:bg-black p-2">
                 <div className="flex w-auto h-auto space-x-2 rounded-md">
                   <input
@@ -84,7 +84,7 @@ let AddZone = () => {
                       }
                     }}
                   >
-                    Add
+                    Connect
                   </div>
                 </div>
               </div>

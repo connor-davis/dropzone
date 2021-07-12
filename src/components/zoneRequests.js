@@ -55,7 +55,7 @@ let ZoneRequests = () => {
             leaveTo="opacity-0 translate-y-1"
             show={open}
           >
-            <Popover.Panel className="absolute z-10 w-64">
+            <Popover.Panel className="absolute z-10 w-64 right-0">
               <div className="w-full overflow-hidden rounded-lg shadow-md ring-1 ring-black ring-opacity-5 bg-gray-100 dark:bg-black p-2">
                 <div className="flex flex-col w-full">
                   <div className="flex flex-col overflow-y-auto max-h-76">
