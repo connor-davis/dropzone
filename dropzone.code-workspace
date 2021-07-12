@@ -1,11 +1,14 @@
 {
   "folders": [
-	{
-		"path": "."
-	},
-	{
-		"path": "../dropzone-protocol"
-	}
-],
+    {
+      "path": "."
+    },
+    {
+      "path": "../dropzone-protocol"
+    },
+    {
+      "path": "../dropzone-connector"
+    }
+  ],
   "settings": {}
 }
