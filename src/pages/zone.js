@@ -126,64 +126,14 @@ let ZonePage = ({ navbar = true }) => {
           </div>
           <div>Create File</div>
         </MenuItem>
-        {/* <MenuItem
-          data={{ foo: 'bar' }}
-          attributes={{
-            className:
-              'flex items-center border-b border-gray-300 dark:border-gray-800 mb-1 px-2 py-1 hover:text-yellow-500 space-x-2 focus:outline-none cursor-pointer',
-          }}
-        >
-          <div className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-yellow-500">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
-              />
-            </svg>
-          </div>
-          <div>Import Folder</div>
-        </MenuItem>
-        <MenuItem
-          data={{ foo: 'bar' }}
-          attributes={{
-            className:
-              'flex items-center px-2 py-1 hover:text-yellow-500 space-x-2 focus:outline-none cursor-pointer',
-          }}
-        >
-          <div className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-yellow-500">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-          </div>
-          <div>Import File</div>
-        </MenuItem> */}
       </ContextMenu>
 
       {navbar && (
         <Navbar
           title={
-            zone.zoneOwner.username === userInfo.username
+            zone.zoneOwner.displayName === userInfo.displayName
               ? 'Your Zone'
-              : `${zone.zoneOwner.firstName} ${zone.zoneOwner.lastName}'s Zone`
+              : `${zone.zoneOwner.displayName}'s Zone`
           }
           backButton={true}
         ></Navbar>

@@ -1,7 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 
-import * as crypto from 'hypercore-crypto';
-
 import React, { useEffect, useState } from 'react';
 import { Route, useHistory } from 'react-router-dom';
 import { getUserInfo, setUser } from '../state/user.slice';
@@ -24,25 +22,22 @@ let ProfileGuard = () => {
 
   let userInfo = useSelector(getUserInfo);
 
-  let [username, setUsername] = useState('');
-  let [firstName, setFirstName] = useState('');
-  let [lastName, setLastName] = useState('');
+  let [displayName, setDisplayName] = useState('');
 
   useEffect(() => {
-    if (
-      userInfo !== {} &&
-      userInfo !== undefined &&
-      userInfo.username !== undefined
-    ) {
-      window.send('initiateNode', userInfo);
+    window.on('nodeInitialized', (userInfo) => dispatch(setUser(userInfo)));
+    window.on('zoneRequest', (packet) => dispatch(addZoneRequest(packet)));
+    window.on('navigate', (packet) => router.push(packet.path));
 
-      window.on('zoneRequest', (packet) => dispatch(addZoneRequest(packet)));
-
-      window.on('navigate', (packet) => router.push(packet.path));
+    if (userInfo.displayName) {
+      window.send('initiateNode', {
+        id: v4(),
+        displayName: userInfo.displayName,
+      });
     }
-  }, [userInfo]);
+  }, []);
 
-  return userInfo.username ? (
+  return userInfo.publicKey ? (
     <div className="flex flex-col w-screen h-screen">
       <Navbar>
         <AddZone />
@@ -51,21 +46,11 @@ let ProfileGuard = () => {
         <div
           className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-yellow-600"
           onClick={() => {
-            navigator.clipboard
-              .writeText(
-                crypto
-                  .keyPair(
-                    crypto.data(
-                      Buffer.from(userInfo.username + '.dropZoneNode')
-                    )
-                  )
-                  .publicKey.toString('hex')
-              )
-              .then(() => {
-                alert(
-                  'Your public key has been copied to your clipboard. Share it with friends so they can connect.'
-                );
-              });
+            navigator.clipboard.writeText(userInfo.publicKey).then(() => {
+              alert(
+                'Your public key has been copied to your clipboard. Share it with friends so they can connect.'
+              );
+            });
           }}
           data-for="zone-share"
           data-tip="Share Zone"
@@ -126,11 +111,7 @@ let ProfileGuard = () => {
       <div className="flex w-screen h-full">
         <Route
           exact
-          path={`/${crypto
-            .keyPair(
-              crypto.data(Buffer.from(userInfo.username + '.dropZoneNode'))
-            )
-            .publicKey.toString('hex')}`}
+          path={`/${userInfo.publicKey}`}
           component={(props) => <ZonePage {...props} navbar={false} />}
         />
         <Route
@@ -149,28 +130,17 @@ let ProfileGuard = () => {
 
           <input
             type="text"
-            placeholder="Username"
-            onChange={({ target: { value } }) => setUsername(value)}
-            className="outline-none border-l border-t border-r border-b border-gray-300 dark:border-gray-800 p-2 rounded-md bg-gray-200 dark:bg-gray-800"
-          />
-          <input
-            type="text"
-            placeholder="First Name"
-            onChange={({ target: { value } }) => setFirstName(value)}
-            className="outline-none border-l border-t border-r border-b border-gray-300 dark:border-gray-800 p-2 rounded-md bg-gray-200 dark:bg-gray-800"
-          />
-          <input
-            type="text"
-            placeholder="Last Name"
-            onChange={({ target: { value } }) => setLastName(value)}
+            placeholder="Display Name"
+            value={displayName}
+            onChange={({ target: { value } }) => setDisplayName(value)}
             className="outline-none border-l border-t border-r border-b border-gray-300 dark:border-gray-800 p-2 rounded-md bg-gray-200 dark:bg-gray-800"
           />
 
           <div
             className="flex justify-center items-center bg-yellow-500 text-white px-3 py-2 rounded-md cursor-pointer"
             onClick={() => {
-              if (username !== '' && firstName !== '' && lastName !== '')
-                dispatch(setUser({ id: v4(), username, firstName, lastName }));
+              if (displayName)
+                window.send('initiateNode', { id: v4(), displayName });
             }}
           >
             Continue

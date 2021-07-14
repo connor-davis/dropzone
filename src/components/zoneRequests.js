@@ -68,10 +68,7 @@ let ZoneRequests = () => {
                           >
                             <div className="flex flex-col">
                               <div className="text-sm">
-                                {request.firstName} {request.lastName}
-                              </div>
-                              <div className="text-xs text-gray-400">
-                                @{request.username}
+                                {request.displayName}
                               </div>
                             </div>
 

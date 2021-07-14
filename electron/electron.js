@@ -192,57 +192,72 @@ let {
 let openports = require('openports');
 
 let routes = require('./routes');
-let { default: axios } = require('axios');
+let { initHandlers } = require('./handlers');
 
+let axios = require('axios').default;
 let crypto = require('hypercore-crypto');
 
-let selfPublicKey,
-  peers = {};
+ipcMain.on('initiateNode', async (event, packet0) => {
+  let nodeUUID = packet0.id;
+  let nodePublicKey = crypto
+    .keyPair(crypto.data(Buffer.from(nodeUUID + '.dropZoneNode')))
+    .publicKey.toString('hex');
 
-ipcMain.once('initiateNode', async (event, packet0) => {
+  initHandlers(nodePublicKey);
+
   openports(1, (error, ports) => {
     let server = new DropZoneServer({
-      key: packet0.username + '.dropZoneNode',
+      key: nodeUUID + '.dropZoneNode',
       port: ports[0],
     });
 
+    let io = require('socket.io')(server.httpServer);
+
     server.use(async (request, response, next) => {
       request.self = packet0;
+      request.publicKey = nodePublicKey;
+
       request.reply = (evt, data) => event.reply(evt, data);
+
+      request.on = (event, listener) => io.on(event, listener);
+
+      response.emit = (event, packet) => io.emit(event, packet);
+      response.emitSocket = (event, packet) =>
+        io.on('connection', (socket) => socket.emit(event, packet));
 
       next();
     });
 
     server.use(routes);
 
-    let io = require('socket.io')(server.httpServer);
-
     server.listen();
 
     setTimeout(() => {
-      selfPublicKey = server.publicKey.toString('hex');
-
       fs.writeFileSync(
-        `${process.cwd()}/userData/zones/${selfPublicKey}.dropzone`,
-        JSON.stringify({ zoneOwner: packet0, zoneFileStructure: [] }),
+        `${process.cwd()}/userData/zones/${nodePublicKey}.dropzone`,
+        JSON.stringify({
+          zoneOwner: { ...packet0, publicKey: nodePublicKey },
+          zoneFileStructure: [],
+        }),
         { encoding: 'utf8' }
       );
 
-      event.reply('navigate', { path: `/${selfPublicKey}` });
+      event.reply('nodeInitialized', { ...packet0, publicKey: nodePublicKey });
+      event.reply('navigate', { path: `/${nodePublicKey}` });
 
-      if (selfPublicKey) {
+      if (nodePublicKey) {
         io.on('connection', (socket) => {
-          socket.on('onlineStatus', (packet1) => {
-            ipcMain.on('setUserZone', (event, packet2) => {
-              socket.emit(`${selfPublicKey}.dropzone.update`, packet2);
+          socket.on('onlineStatus', (_) => {
+            ipcMain.on('setUserZone', (_, packet2) => {
+              socket.emit(`${nodePublicKey}.dropzone.update`, packet2);
             });
           });
 
-          socket.on(`${selfPublicKey}.dropzone.update`, (packet1) => {
+          socket.on(`${nodePublicKey}.dropzone.update`, (packet1) => {
             event.reply('userZone', packet1);
 
             return fs.writeFileSync(
-              `${process.cwd()}/userData/zones/${selfPublicKey}.dropzone`,
+              `${process.cwd()}/userData/zones/${nodePublicKey}.dropzone`,
               JSON.stringify(packet1),
               { encoding: 'utf8' }
             );
@@ -270,7 +285,7 @@ ipcMain.on('connectUnknownZone', async (event, packet0) => {
 
     axios.get(`${url}/`).then((response) => {
       event.reply('userZone', {
-        message: `Waiting for acceptance into ${response.data.self.firstName} ${response.data.self.lastName}'s Zone.`,
+        message: `Waiting for acceptance into ${response.data.self.displayName}'s Zone.`,
       });
 
       axios
@@ -287,11 +302,11 @@ ipcMain.on('connectUnknownZone', async (event, packet0) => {
               setTimeout(() => {
                 event.reply('userZone', {
                   zoneOwner: {
+                    ...response.data.zone.zoneOwner,
                     publicKey: packet0.key,
-                    ...response.data.self,
                     type: 'active',
                   },
-                  zoneFileStructure: [],
+                  zoneFileStructure: response.data.zone.zoneFileStructure,
                 });
 
                 socketClient.on(`${packet0.key}.dropzone.update`, (packet1) => {
@@ -304,37 +319,20 @@ ipcMain.on('connectUnknownZone', async (event, packet0) => {
               }, 200);
             }, 1000);
           } else {
-            event.reply('removeZone', response.data.self.id);
+            console.log('Request denied', packet0);
+            event.reply('navigate', {
+              path: `/${packet0.userInformation.publicKey}`,
+            });
           }
         })
-        .catch((error) => {});
+        .catch((error) => {
+          event.reply('navigate', {
+            path: `/${packet0.userInformation.publicKey}`,
+            error,
+          });
+        });
     });
   });
-});
-
-ipcMain.on('setUserZone', (event, packet0) => {
-  event.reply('userZone', packet0);
-
-  return fs.writeFileSync(
-    `${process.cwd()}/userData/zones/${
-      packet0.zoneOwner.publicKey || selfPublicKey
-    }.dropzone`,
-    JSON.stringify(packet0),
-    { encoding: 'utf8' }
-  );
-});
-
-ipcMain.on('getUserZone', (event, packet0) => {
-  console.log(packet0);
-
-  let userZone = JSON.parse(
-    fs.readFileSync(
-      `${process.cwd()}/userData/zones/${selfPublicKey}.dropzone`,
-      { encoding: 'utf8' }
-    )
-  );
-
-  event.reply('userZone', userZone);
 });
 
 let appFolders = {
