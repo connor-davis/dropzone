@@ -4,7 +4,7 @@ import { getUserInfo } from '../state/user.slice';
 import { useHistory } from 'react-router';
 import { useSelector } from 'react-redux';
 
-let BackButton = () => {
+let BackButton = ({ onClick }) => {
   let router = useHistory();
 
   let userInfo = useSelector(getUserInfo);
@@ -15,7 +15,7 @@ let BackButton = () => {
         className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-yellow-500"
         data-for="back-button"
         data-tip="Exit"
-        onClick={() => router.push(`/${userInfo.publicKey}`)}
+        onClick={onClick}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

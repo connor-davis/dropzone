@@ -192,80 +192,154 @@ let {
 let openports = require('openports');
 
 let routes = require('./routes');
-let { initHandlers } = require('./handlers');
+let { initHandlers, initPeerHandlers } = require('./handlers');
 
 let axios = require('axios').default;
 let crypto = require('hypercore-crypto');
 
-ipcMain.on('initiateNode', async (event, packet0) => {
-  let nodeUUID = packet0.id;
-  let nodePublicKey = crypto
-    .keyPair(crypto.data(Buffer.from(nodeUUID + '.dropZoneNode')))
-    .publicKey.toString('hex');
+let createFolders = (folders) => {
+  for (let folderIndex in folders) {
+    let folder = folders[folderIndex];
 
-  initHandlers(nodePublicKey);
+    if (!fs.existsSync(`${folder.root}/${folder.name}`))
+      fs.mkdirSync(`${folder.root}/${folder.name}`);
 
-  openports(1, (error, ports) => {
-    let server = new DropZoneServer({
-      key: nodeUUID + '.dropZoneNode',
-      port: ports[0],
-    });
+    if (folder.subFolders) createFolders(folder.subFolders);
+  }
+};
 
-    let io = require('socket.io')(server.httpServer);
+let createFiles = (files) => {
+  for (let fileIndex in files) {
+    let file = files[fileIndex];
 
-    server.use(async (request, response, next) => {
-      request.self = packet0;
-      request.publicKey = nodePublicKey;
+    if (!fs.existsSync(`${file.rootPath}/${file.name}`))
+      fs.writeFileSync(`${file.rootPath}/${file.name}`, file.data, {
+        encoding: file.encoding,
+      });
+  }
+};
 
-      request.reply = (evt, data) => event.reply(evt, data);
+ipcMain.once('initiateNode', async (event, packet0) => {
+  let exists =
+    fs.existsSync(`${process.cwd()}/userData/zones/${packet0.displayName}`) &&
+    fs.existsSync(
+      `${process.cwd()}/userData/zones/${
+        packet0.displayName
+      }/zoneOwner.dropzone`
+    );
 
-      request.on = (event, listener) => io.on(event, listener);
-
-      response.emit = (event, packet) => io.emit(event, packet);
-      response.emitSocket = (event, packet) =>
-        io.on('connection', (socket) => socket.emit(event, packet));
-
-      next();
-    });
-
-    server.use(routes);
-
-    server.listen();
-
-    setTimeout(() => {
-      fs.writeFileSync(
-        `${process.cwd()}/userData/zones/${nodePublicKey}.dropzone`,
-        JSON.stringify({
-          zoneOwner: { ...packet0, publicKey: nodePublicKey },
-          zoneFileStructure: [],
-        }),
-        { encoding: 'utf8' }
+  setTimeout(() => {
+    if (exists) {
+      let user = JSON.parse(
+        fs.readFileSync(
+          `${process.cwd()}/userData/zones/${
+            packet0.displayName
+          }/zoneOwner.dropzone`
+        )
       );
 
-      event.reply('nodeInitialized', { ...packet0, publicKey: nodePublicKey });
-      event.reply('navigate', { path: `/${nodePublicKey}` });
+      let nodeUUID = user.id;
+      let nodePublicKey = user.publicKey;
 
-      if (nodePublicKey) {
-        io.on('connection', (socket) => {
-          socket.on('onlineStatus', (_) => {
-            ipcMain.on('setUserZone', (_, packet2) => {
-              socket.emit(`${nodePublicKey}.dropzone.update`, packet2);
-            });
-          });
-
-          socket.on(`${nodePublicKey}.dropzone.update`, (packet1) => {
-            event.reply('userZone', packet1);
-
-            return fs.writeFileSync(
-              `${process.cwd()}/userData/zones/${nodePublicKey}.dropzone`,
-              JSON.stringify(packet1),
-              { encoding: 'utf8' }
-            );
-          });
+      openports(1, (error, ports) => {
+        let server = new DropZoneServer({
+          key: nodeUUID + '.dropZoneNode',
+          port: ports[0],
         });
-      }
-    }, 500);
-  });
+
+        let io = require('socket.io')(server.httpServer);
+
+        server.use(async (request, response, next) => {
+          request.self = user;
+          request.publicKey = nodePublicKey;
+
+          request.reply = (evt, data) => event.reply(evt, data);
+
+          request.on = (event, listener) => io.on(event, listener);
+
+          response.emit = (event, packet) => io.emit(event, packet);
+          response.emitSocket = (event, packet) =>
+            io.on('connection', (socket) => socket.emit(event, packet));
+
+          next();
+        });
+
+        server.use(routes);
+
+        server.listen();
+
+        setTimeout(() => {
+          initHandlers({
+            displayName: user.displayName,
+            publicKey: nodePublicKey,
+            io,
+          });
+
+          event.reply('nodeInitialized', user);
+          event.reply('navigate', { path: `/${user.displayName}` });
+        }, 500);
+      });
+    } else {
+      let nodeUUID = packet0.id;
+      let nodePublicKey = crypto
+        .keyPair(crypto.data(Buffer.from(nodeUUID + '.dropZoneNode')))
+        .publicKey.toString('hex');
+
+      openports(1, (error, ports) => {
+        let server = new DropZoneServer({
+          key: nodeUUID + '.dropZoneNode',
+          port: ports[0],
+        });
+
+        let io = require('socket.io')(server.httpServer);
+
+        server.use(async (request, response, next) => {
+          request.self = packet0;
+          request.publicKey = nodePublicKey;
+
+          request.reply = (evt, data) => event.reply(evt, data);
+
+          request.on = (event, listener) => io.on(event, listener);
+
+          response.emit = (event, packet) => io.emit(event, packet);
+          response.emitSocket = (event, packet) =>
+            io.on('connection', (socket) => socket.emit(event, packet));
+
+          next();
+        });
+
+        server.use(routes);
+
+        server.listen();
+
+        setTimeout(() => {
+          fs.mkdirSync(
+            `${process.cwd()}/userData/zones/${packet0.displayName}`
+          );
+
+          fs.writeFileSync(
+            `${process.cwd()}/userData/zones/${
+              packet0.displayName
+            }/zoneOwner.dropzone`,
+            JSON.stringify({ ...packet0, publicKey: nodePublicKey }),
+            { encoding: 'utf8' }
+          );
+
+          initHandlers({
+            displayName: packet0.displayName,
+            publicKey: nodePublicKey,
+            io,
+          });
+
+          event.reply('nodeInitialized', {
+            ...packet0,
+            publicKey: nodePublicKey,
+          });
+          event.reply('navigate', { path: `/${packet0.displayName}` });
+        }, 500);
+      });
+    }
+  }, 500);
 });
 
 ipcMain.on('connectUnknownZone', async (event, packet0) => {
@@ -299,27 +373,23 @@ ipcMain.on('connectUnknownZone', async (event, packet0) => {
             setTimeout(() => {
               event.reply('navigate', { path: `/zone/${packet0.key}` });
 
+              initPeerHandlers({
+                url,
+                axios,
+                socketClient,
+                peerKey: packet0.key,
+                peerDisplayName: response.data.zone.zoneOwner.displayName,
+              });
+
               setTimeout(() => {
-                event.reply('userZone', {
-                  zoneOwner: {
-                    ...response.data.zone.zoneOwner,
-                    publicKey: packet0.key,
-                    type: 'active',
-                  },
-                  zoneFileStructure: response.data.zone.zoneFileStructure,
-                });
+                event.reply('userZone', response.data.zone);
 
                 socketClient.on(`${packet0.key}.dropzone.update`, (packet1) => {
                   event.reply('userZone', packet1);
                 });
-
-                ipcMain.on('setUserZone', (event, packet1) => {
-                  socketClient.emit(`${packet0.key}.dropzone.update`, packet1);
-                });
               }, 200);
             }, 1000);
           } else {
-            console.log('Request denied', packet0);
             event.reply('navigate', {
               path: `/${packet0.userInformation.publicKey}`,
             });
@@ -344,19 +414,12 @@ let appFolders = {
         root: `${process.cwd()}/userData`,
         name: 'zones',
       },
+      1: {
+        root: `${process.cwd()}/userData`,
+        name: 'downloads',
+      },
     },
   },
-};
-
-let createFolders = (folders) => {
-  for (let folderIndex in folders) {
-    let folder = folders[folderIndex];
-
-    if (!fs.existsSync(`${folder.root}/${folder.name}`))
-      fs.mkdirSync(`${folder.root}/${folder.name}`);
-
-    if (folder.subFolders) createFolders(folder.subFolders);
-  }
 };
 
 createFolders(appFolders);

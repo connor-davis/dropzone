@@ -25,7 +25,9 @@ let ProfileGuard = () => {
   let [displayName, setDisplayName] = useState('');
 
   useEffect(() => {
-    window.on('nodeInitialized', (userInfo) => dispatch(setUser(userInfo)));
+    window.on('nodeInitialized', (userInfo) => {
+      dispatch(setUser(userInfo));
+    });
     window.on('zoneRequest', (packet) => dispatch(addZoneRequest(packet)));
     window.on('navigate', (packet) => router.push(packet.path));
 
@@ -35,6 +37,8 @@ let ProfileGuard = () => {
         displayName: userInfo.displayName,
       });
     }
+
+    return () => {};
   }, []);
 
   return userInfo.publicKey ? (
@@ -81,7 +85,12 @@ let ProfileGuard = () => {
 
         <div
           className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-red-500"
-          onClick={() => persistor.purge().then(() => window.location.reload())}
+          onClick={() =>
+            persistor.purge().then(() => {
+              window.location.reload();
+              window.send('purge', userInfo.publicKey);
+            })
+          }
           data-for="logout"
           data-tip="Logout"
         >
@@ -111,11 +120,11 @@ let ProfileGuard = () => {
       <div className="flex w-screen h-full">
         <Route
           exact
-          path={`/${userInfo.publicKey}`}
-          component={(props) => <ZonePage {...props} navbar={false} />}
+          path={`/${userInfo.displayName}`}
+          component={(props) => <ZonePage {...props} />}
         />
         <Route
-          path="/zone/:username"
+          path="/zone/:displayName"
           component={(props) => <ZonePage {...props} />}
         />
       </div>
