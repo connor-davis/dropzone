@@ -64,7 +64,9 @@ let FileStructure = ({ displayName }) => {
         id: v4(),
         root: '/',
         name: file.replace('.droplet', ''),
-        meta: data.meta,
+        meta: (!stats.isDirectory() && data.meta) || {
+          type: 'folder',
+        },
         type:
           (stats.isFile() && 'file') ||
           (stats.isDirectory() && 'directory') ||
