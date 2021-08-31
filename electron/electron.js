@@ -253,7 +253,9 @@ ipcMain.once('initiateNode', async (event, packet0) => {
           request.self = user;
           request.publicKey = nodePublicKey;
 
-          request.reply = (evt, data) => event.reply(evt, data);
+          request.reply = (evt, data) => {
+            event.reply(evt, data);
+          };
 
           request.on = (event, listener) => io.on(event, listener);
 
@@ -384,8 +386,8 @@ ipcMain.on('connectUnknownZone', async (event, packet0) => {
               setTimeout(() => {
                 event.reply('userZone', response.data.zone);
 
-                socketClient.on(`${packet0.key}.dropzone.update`, (packet1) => {
-                  event.reply('userZone', packet1);
+                socketClient.on(`${packet0.key}.dropzone`, (packet) => {
+                  event.reply('userZone', packet);
                 });
               }, 200);
             }, 1000);

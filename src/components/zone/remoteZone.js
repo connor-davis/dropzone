@@ -3,27 +3,27 @@
 import { ContextMenu, ContextMenuTrigger, MenuItem } from 'react-contextmenu';
 import React, { useCallback, useEffect, useState } from 'react';
 
-import { getUserInfo } from '../../state/user.slice';
+import Navbar from '../../components/navbar';
 import { useDropzone } from 'react-dropzone';
-import { useSelector } from 'react-redux';
 
 let RemoteZone = ({ zone, setZone }) => {
-  let userInfo = useSelector(getUserInfo);
-
   let [renamingItemValue, setRenamingItemValue] = useState('');
   let [timeoutID, setTimeoutID] = useState();
   let [acceptedFiles, setAcceptedFiles] = useState([]);
+
+  let [zoneDownloads, setZoneDownloads] = useState([]);
+  let [zoneUploads, setZoneUploads] = useState([]);
 
   let onDrop = useCallback((acceptedFiles) => {
     setAcceptedFiles(acceptedFiles);
 
     return () => {};
   }, []);
-  let { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
+  let { getRootProps, getInputProps } = useDropzone({ onDrop });
 
   useEffect(() => {
     acceptedFiles.forEach((file) => {
-      window.send('createRemote', {
+      window.send('createRemoteFile', {
         displayName: zone.zoneOwner.displayName,
         path: zone.zonePreviousDirectory,
         fileName: file.name,
@@ -36,6 +36,28 @@ let RemoteZone = ({ zone, setZone }) => {
 
     return () => {};
   }, [acceptedFiles]);
+
+  useEffect(() => {
+    zone.zoneFileStructure.map((item) => {
+      window.on(`${item.id}-downloadProgress`, (progress) => {
+        setZoneDownloads((old) => [
+          ...old.filter(({ item: o }) => o.id !== item.id),
+          { item, progress },
+        ]);
+      });
+
+      window.on(`${item.id}-uploadProgress`, (progress) => {
+        setZoneUploads((old) => [
+          ...old.filter(({ item: o }) => o.id !== item.id),
+          { item, progress },
+        ]);
+      });
+
+      return item;
+    });
+
+    return () => {};
+  }, [zone]);
 
   return (
     <div className="flex w-full h-full">
@@ -50,7 +72,7 @@ let RemoteZone = ({ zone, setZone }) => {
               'flex items-center border-b border-gray-300 dark:border-gray-800 mb-1 px-2 py-1 hover:text-yellow-500 space-x-2 focus:outline-none cursor-pointer',
           }}
           onClick={() =>
-            window.send('createRemote', {
+            window.send('createRemoteFolder', {
               displayName: zone.zoneOwner.displayName,
               path: zone.zonePreviousDirectory,
               name:
@@ -92,40 +114,116 @@ let RemoteZone = ({ zone, setZone }) => {
           <div>Create Folder</div>
         </MenuItem>
       </ContextMenu>
-      <div className="flex flex-col w-2/3 h-full border-r border-gray-300 dark:border-gray-800">
-        <div className="w-full h-full" {...getRootProps()} onClick={() => {}}>
+      <div className="flex flex-col flex-none w-3/5 h-full border-r border-gray-300 dark:border-gray-800 overflow-y-auto">
+        <div
+          className="flex flex-col flex-none w-full h-full overflow-y-auto"
+          {...getRootProps()}
+          onClick={() => {}}
+        >
           <input {...getInputProps()} />
           <ContextMenuTrigger
             id="zoneContextMenu"
             attributes={{
-              className: 'flex flex-col w-full h-full p-2 pr-20',
+              className:
+                'flex flex-col flex-none w-full h-full p-2 pr-20 overflow-y-auto',
             }}
           >
-            {zone.zoneFileStructure &&
-              zone.zoneFileStructure.length > 0 &&
-              zone.zoneFileStructure
-                .sort((a, b) => {
-                  if (a.type === 'directory' && b.type === 'file') return -1;
-                  if (a.type === 'file' && b.type === 'directory') return 1;
-                  return 0;
-                })
-                .map((item) => {
-                  return (
-                    <Item
-                      item={item}
-                      zone={zone}
-                      setZone={setZone}
-                      renamingItemValue={renamingItemValue}
-                      setRenamingItemValue={renamingItemValue}
-                      timeoutID={timeoutID}
-                      setTimeoutID={setTimeoutID}
-                    />
-                  );
-                })}
+            <div className="flex flex-col w-full h-auto overflow-y-auto">
+              {zone.zoneFileStructure &&
+                zone.zoneFileStructure.length > 0 &&
+                zone.zoneFileStructure
+                  .sort((a, b) => {
+                    if (a.type === 'directory' && b.type === 'file') return -1;
+                    if (a.type === 'file' && b.type === 'directory') return 1;
+                    return 0;
+                  })
+                  .map((item) => {
+                    return (
+                      <Item
+                        item={item}
+                        zone={zone}
+                        setZone={setZone}
+                        renamingItemValue={renamingItemValue}
+                        setRenamingItemValue={setRenamingItemValue}
+                        timeoutID={timeoutID}
+                        setTimeoutID={setTimeoutID}
+                      />
+                    );
+                  })}
+            </div>
           </ContextMenuTrigger>
         </div>
       </div>
-      <div className="flex flex-col w-1/3 h-full "></div>
+      <div className="flex flex-col w-2/5 h-full">
+        <div className="flex flex-col w-full h-1/2">
+          <Navbar
+            title={
+              zoneDownloads.filter(({ progress }) => progress.percentage < 100)
+                .length > 0
+                ? `Downloads (${
+                    zoneDownloads.filter(
+                      ({ progress }) => progress.percentage < 100
+                    ).length
+                  })`
+                : 'Downloads'
+            }
+            backButton={false}
+          />
+
+          <div className="flex flex-col w-full h-full overflow-y-auto">
+            {zoneDownloads &&
+              zoneDownloads.length > 0 &&
+              zoneDownloads
+                .sort((a, b) => {
+                  if (a.progress.percentage > b.progress.percentage) return -1;
+                  if (a.progress.percentage < b.progress.percentage) return 1;
+                  return 0;
+                })
+                .map(({ item, progress }) => (
+                  <div className="flex justify-between items-center border-b border-gray-300 dark:border-gray-800 px-2 py-3">
+                    <div className="flex items-center">
+                      <div className="text-xss">{item.name}</div>
+                    </div>
+                    {progress.percentage < 100 ? (
+                      <div className="flex justify-center items-center ml-auto">
+                        <div className="flex ml-1 text-green-500 text-xss">
+                          {`${progress.loaded}/${progress.total}`}
+                        </div>
+                        <div className="flex ml-1 text-green-500 text-xss">
+                          {progress > 0 && `${progress}%`}
+                        </div>
+                        <div className="flex ml-1 text-green-500 text-xss">
+                          {progress.eta}
+                        </div>
+                        <div className="flex ml-1 text-green-500 text-xss">
+                          {progress.speed !== '' && `${progress.speed}/s`}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex ml-1 text-green-500 text-xss">
+                        Completed
+                      </div>
+                    )}
+                  </div>
+                ))}
+          </div>
+        </div>
+        <div className="flex flex-col w-full h-1/2 border-t border-gray-300 dark:border-gray-800">
+          <Navbar
+            title={
+              zoneUploads.filter(({ progress }) => progress.percentage < 100)
+                .length > 0
+                ? `Uploads (${
+                    zoneUploads.filter(
+                      ({ progress }) => progress.percentage < 100
+                    ).length
+                  })`
+                : 'Uploads'
+            }
+            backButton={false}
+          />
+        </div>
+      </div>
     </div>
   );
 };
@@ -139,16 +237,6 @@ let Item = ({
   setTimeoutID,
   item,
 }) => {
-  let [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    window.on(`${item.id}-downloadProgress`, (progress) =>
-      setProgress(Math.ceil((progress.loaded / progress.total) * 100))
-    );
-
-    return () => {};
-  }, []);
-
   return (
     item.name &&
     !item.name.endsWith('.dropzone') && (
@@ -230,11 +318,19 @@ let Item = ({
                     'flex items-center px-2 py-1 hover:text-red-500 space-x-2 focus:outline-none cursor-pointer',
                 }}
                 onClick={() => {
-                  window.send('unlinkRemote', {
-                    displayName: zone.zoneOwner.displayName,
-                    root: item.root,
-                    name: item.name,
-                  });
+                  if (item.type === 'file') {
+                    window.send('unlinkRemoteFile', {
+                      displayName: zone.zoneOwner.displayName,
+                      root: item.root,
+                      name: item.name,
+                    });
+                  } else {
+                    window.send('unlinkRemoteFolder', {
+                      displayName: zone.zoneOwner.displayName,
+                      root: item.root,
+                      name: item.name,
+                    });
+                  }
                 }}
               >
                 <div className="flex justify-center items-center border-l border-t border-r border-b border-gray-300 dark:border-gray-800 rounded-full p-1 cursor-pointer hover:text-red-500">
@@ -304,30 +400,27 @@ let Item = ({
                   }
                   onKeyUp={({ key }) => {
                     if (key === 'Enter') {
-                      window.send('renameRemote', {
-                        displayName: zone.zoneOwner.displayName,
-                        root: item.root,
-                        name: item.name,
-                        newName: renamingItemValue,
-                      });
+                      if (item.type === 'file') {
+                        window.send('renameRemoteFile', {
+                          displayName: zone.zoneOwner.displayName,
+                          root: item.root,
+                          name: item.name,
+                          newName: renamingItemValue,
+                        });
+                      } else {
+                        window.send('renameRemoteFolder', {
+                          displayName: zone.zoneOwner.displayName,
+                          root: item.root,
+                          name: item.name,
+                          newName: renamingItemValue,
+                        });
+                      }
                     }
                   }}
                   autoFocus
                 />
               ) : (
                 <div className="text-sm">{item.name}</div>
-              )}
-            </div>
-            <div className="flex justify-center items-center ml-auto">
-              {progress > 0 && (
-                <div class="w-24 h-2 relative max-w-xl rounded-full overflow-hidden">
-                  <div class="w-full h-full bg-gray-200 absolute"></div>
-                  <div
-                    id="bar"
-                    style={{ width: progress + '%' }}
-                    class="h-full bg-green-500 relative w-0"
-                  ></div>
-                </div>
               )}
             </div>
           </div>

@@ -5,8 +5,11 @@ window.send = (type, packet) => {
 };
 
 window.on = (type, callback) => {
+  let close = () => ipcRenderer.removeListener(type);
+
   ipcRenderer.on(type, (event, packet) => {
-    console.log(type, packet);
-    callback(packet);
+    callback(packet, close);
   });
 };
+
+ipcRenderer.setMaxListeners(10000);

@@ -1,7 +1,8 @@
 let { ipcMain } = require('electron');
 let fs = require('fs');
 let { v4 } = require('uuid');
-const {
+let progress = require('progress-stream');
+let {
   CreateFile,
   DeleteFile,
   RenameFile,
@@ -11,6 +12,7 @@ const {
   FileStructure,
   RenameFileOrFolder,
 } = require('./file');
+let { formatBytes } = require('../utils/formatters');
 
 let initHandlers = ({ displayName, publicKey, io }) => {
   let zoneOwner = JSON.parse(
@@ -22,25 +24,77 @@ let initHandlers = ({ displayName, publicKey, io }) => {
     )
   );
 
-  io.on(`${publicKey}.dropzone.createFile`, (packet) =>
-    CreateFile({ path: packet.path, data: packet.data })
-  );
-  io.on(`${publicKey}.dropzone.unlinkFile`, (packet) =>
-    DeleteFile({ path: packet.path })
-  );
-  io.on(`${publicKey}.dropzone.renameFile`, (packet) =>
-    RenameFile({ path: packet.path, name: packet.name })
-  );
+  io.on(`${publicKey}.dropzone.createFile`, (packet) => {
+    CreateFile({ path: packet.path, data: packet.data });
 
-  io.on(`${publicKey}.dropzone.createFolder`, (packet) =>
-    CreateFolder({ path: packet.path })
-  );
-  io.on(`${publicKey}.dropzone.unlinkFolder`, (packet) =>
-    DeleteFolder({ path: packet.path })
-  );
-  io.on(`${publicKey}.dropzone.renameFolder`, (packet) =>
-    RenameFolder({ path: packet.path, name: packet.name })
-  );
+    let zone = {
+      zoneOwner,
+      zoneFileStructure: FileStructure({ displayName }),
+      zonePreviousDirectory: `${process.cwd()}/userData/zones/${displayName}/`,
+    };
+
+    ipcMain.emit('userZone', zone);
+  });
+
+  io.on(`${publicKey}.dropzone.unlinkFile`, (packet) => {
+    DeleteFile({ path: packet.path });
+
+    let zone = {
+      zoneOwner,
+      zoneFileStructure: FileStructure({ displayName }),
+      zonePreviousDirectory: `${process.cwd()}/userData/zones/${displayName}/`,
+    };
+
+    ipcMain.emit('userZone', zone);
+  });
+
+  io.on(`${publicKey}.dropzone.renameFile`, (packet) => {
+    RenameFile({ path: packet.path, name: packet.name });
+
+    let zone = {
+      zoneOwner,
+      zoneFileStructure: FileStructure({ displayName }),
+      zonePreviousDirectory: `${process.cwd()}/userData/zones/${displayName}/`,
+    };
+
+    ipcMain.emit('userZone', zone);
+  });
+
+  io.on(`${publicKey}.dropzone.createFolder`, (packet) => {
+    CreateFolder({ path: packet.path });
+
+    let zone = {
+      zoneOwner,
+      zoneFileStructure: FileStructure({ displayName }),
+      zonePreviousDirectory: `${process.cwd()}/userData/zones/${displayName}/`,
+    };
+
+    ipcMain.emit('userZone', zone);
+  });
+
+  io.on(`${publicKey}.dropzone.unlinkFolder`, (packet) => {
+    DeleteFolder({ path: packet.path });
+
+    let zone = {
+      zoneOwner,
+      zoneFileStructure: FileStructure({ displayName }),
+      zonePreviousDirectory: `${process.cwd()}/userData/zones/${displayName}/`,
+    };
+
+    ipcMain.emit('userZone', zone);
+  });
+
+  io.on(`${publicKey}.dropzone.renameFolder`, (packet) => {
+    RenameFolder({ path: packet.path, name: packet.name });
+
+    let zone = {
+      zoneOwner,
+      zoneFileStructure: FileStructure({ displayName }),
+      zonePreviousDirectory: `${process.cwd()}/userData/zones/${displayName}/`,
+    };
+
+    ipcMain.emit('userZone', zone);
+  });
 
   ipcMain.on('purge', () => {
     fs.unlinkSync(
@@ -73,7 +127,7 @@ let initHandlers = ({ displayName, publicKey, io }) => {
         zone: {
           zoneOwner,
           zoneFileStructure: FileStructure({ displayName }),
-          zonePreviousDirectory: packet0.path,
+          zonePreviousDirectory: `${process.cwd()}/userData/zones/${displayName}/`,
         },
       });
     } else {
@@ -86,30 +140,40 @@ let initHandlers = ({ displayName, publicKey, io }) => {
         zone: {
           zoneOwner,
           zoneFileStructure: FileStructure({ displayName }),
-          zonePreviousDirectory: packet0.path,
+          zonePreviousDirectory: `${process.cwd()}/userData/zones/${displayName}/`,
         },
       });
     }
 
-    event.reply('userZone', {
+    let zone = {
       zoneOwner,
       zoneFileStructure: FileStructure({ displayName }),
-      zonePreviousDirectory: packet0.path,
-    });
+      zonePreviousDirectory: `${process.cwd()}/userData/zones/${displayName}/`,
+    };
+
+    event.reply('userZone', zone);
+    io.emit(`${publicKey}.dropzone`, zone);
   });
 
   ipcMain.on('unlinkLocal', (event, packet0) => {
     let stats = fs.statSync(`${packet0.path}`);
 
-    if (stats.isFile() || stats.isSymbolicLink())
-      DeleteFile({ path: packet0.path });
-    else DeleteFolder({ path: packet0.path });
+    if (stats.isFile() || stats.isSymbolicLink()) {
+      let { path } = DeleteFile({ path: packet0.path });
+      io.emit(`${publicKey}.dropzone.unlinkFile`, { path });
+    } else {
+      let { path } = DeleteFolder({ path: packet0.path });
+      io.emit(`${publicKey}.dropzone.unlinkFolder`, { path });
+    }
 
-    event.reply('userZone', {
+    let zone = {
       zoneOwner,
       zoneFileStructure: FileStructure({ displayName }),
-      zonePreviousDirectory: packet0.path,
-    });
+      zonePreviousDirectory: `${process.cwd()}/userData/zones/${displayName}/`,
+    };
+
+    event.reply('userZone', zone);
+    io.emit(`${publicKey}.dropzone`, zone);
   });
 
   ipcMain.on('renameLocal', (event, packet0) => {
@@ -119,31 +183,31 @@ let initHandlers = ({ displayName, publicKey, io }) => {
       newName: packet0.newName,
     });
 
-    io.emit(`${publicKey}.dropzone.rename`, { path, name, newName });
-
-    event.reply('userZone', {
+    let zone = {
       zoneOwner,
       zoneFileStructure: FileStructure({ displayName }),
-      zonePreviousDirectory: packet0.path,
-    });
+      zonePreviousDirectory: `${process.cwd()}/userData/zones/${displayName}/`,
+    };
+
+    event.reply('userZone', zone);
+    io.emit(`${publicKey}.dropzone`, zone);
   });
 
   ipcMain.on('getLocalFileStructure', (event, packet0) => {
-    event.reply('userZone', {
+    let zone = {
       zoneOwner,
       zoneFileStructure: FileStructure({ displayName }),
-      zonePreviousDirectory: packet0.path,
-    });
+      zonePreviousDirectory: `${process.cwd()}/userData/zones/${displayName}/`,
+    };
+
+    event.reply('userZone', zone);
   });
 
   ipcMain.on('getLocalZone', (event, packet0) => {
-    if (!packet0.path)
-      packet0.path = `${process.cwd()}/userData/zones/${displayName}/`;
-
     event.reply('userZone', {
       zoneOwner,
       zoneFileStructure: FileStructure({ displayName }),
-      zonePreviousDirectory: packet0.path,
+      zonePreviousDirectory: `${process.cwd()}/userData/zones/${displayName}/`,
     });
   });
 };
@@ -155,13 +219,15 @@ let initPeerHandlers = ({
   peerKey,
   peerDisplayName,
 }) => {
+  ipcMain.on('getRemoteZone', async (event, packet) => {
+    let response = await axios.get(`${url}/zone`);
+
+    console.log(response);
+
+    event.reply('userZone', response.data);
+  });
+
   ipcMain.on('download', (event, packet) => {
-    console.log(packet);
-
-    let writer = fs.createWriteStream(
-      `${process.cwd()}/userData/downloads/${packet.name}`
-    );
-
     axios
       .get(`${url}/download`, {
         responseType: 'stream',
@@ -172,16 +238,29 @@ let initPeerHandlers = ({
         },
       })
       .then((response) => {
-        response.data.pipe(writer);
-
         let totalSize = response.headers['content-length'];
-        let downloaded = 0;
 
-        response.data.on('data', (data) => {
-          downloaded += Buffer.byteLength(data);
+        let str = progress({
+          length: totalSize,
+          time: 1000,
+        });
+
+        response.data
+          .pipe(str)
+          .pipe(
+            fs.createWriteStream(
+              `${process.cwd()}/userData/downloads/${packet.name}`
+            )
+          );
+
+        str.on('progress', function (progress) {
           event.reply(`${packet.id}-downloadProgress`, {
-            total: totalSize,
-            loaded: downloaded,
+            id: packet.id,
+            total: formatBytes(progress.length),
+            loaded: formatBytes(progress.transferred),
+            percentage: progress.percentage.toFixed(2),
+            eta: new Date(progress.eta * 1000).toISOString().substr(11, 8),
+            speed: formatBytes(progress.speed),
           });
         });
 
@@ -195,15 +274,38 @@ let initPeerHandlers = ({
       });
   });
 
-  ipcMain.on('createRemote', (event, packet0) => {});
+  ipcMain.on('createRemoteFile', (event, packet) => {
+    socketClient.emit(`${peerKey}.dropzone.createFile`, {
+      path: packet.path,
+      data: packet.data,
+    });
+  });
 
-  ipcMain.on('unlinkRemote', (event, packet0) => {});
+  ipcMain.on('unlinkRemoteFile', (event, packet) => {
+    socketClient.emit(`${peerKey}.dropzone.unlinkFile`, { path: packet.path });
+  });
 
-  ipcMain.on('renameRemote', (event, packet0) => {});
+  ipcMain.on('renameRemoteFile', (event, packet) => {
+    socketClient.emit(`${peerKey}.dropzone.renameFile`, {
+      path: packet.path,
+      name: packet.name,
+    });
+  });
 
-  ipcMain.on('getRemoteFileStructure', (event, packet0) => {});
+  ipcMain.on('createRemoteFolder', (event, packet) => {
+    socketClient.emit(`${peerKey}.dropzone.createFile`, { path: packet.path });
+  });
 
-  ipcMain.on('getRemoteZone', (event, packet0) => {});
+  ipcMain.on('unlinkRemoteFolder', (event, packet) => {
+    socketClient.emit(`${peerKey}.dropzone.unlinkFile`, { path: packet.path });
+  });
+
+  ipcMain.on('renameRemoteFolder', (event, packet) => {
+    socketClient.emit(`${peerKey}.dropzone.renameFile`, {
+      path: packet.path,
+      name: packet.name,
+    });
+  });
 };
 
 module.exports = { initHandlers, initPeerHandlers };

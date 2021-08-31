@@ -3,21 +3,21 @@
 import { ContextMenu, ContextMenuTrigger, MenuItem } from 'react-contextmenu';
 import React, { useCallback, useEffect, useState } from 'react';
 
-import { getUserInfo } from '../../state/user.slice';
+import Navbar from '../navbar';
 import { useDropzone } from 'react-dropzone';
-import { useSelector } from 'react-redux';
 
 let LocalZone = ({ zone, setZone }) => {
-  let userInfo = useSelector(getUserInfo);
-
   let [renamingItemValue, setRenamingItemValue] = useState('');
   let [timeoutID, setTimeoutID] = useState();
   let [acceptedFiles, setAcceptedFiles] = useState([]);
 
+  let [zoneDownloads, setZoneDownloads] = useState([]);
+  let [zoneUploads, setZoneUploads] = useState([]);
+
   let onDrop = useCallback((acceptedFiles) => {
     setAcceptedFiles(acceptedFiles);
   }, []);
-  let { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
+  let { getRootProps, getInputProps } = useDropzone({ onDrop });
 
   useEffect(() => {
     acceptedFiles.forEach((file) => {
@@ -34,6 +34,28 @@ let LocalZone = ({ zone, setZone }) => {
 
     return () => {};
   }, [acceptedFiles]);
+
+  useEffect(() => {
+    zone.zoneFileStructure.map((item) => {
+      window.on(`${item.id}-downloadProgress`, (progress) => {
+        setZoneDownloads((old) => [
+          ...old.filter(({ item: o }) => o.id !== item.id),
+          { item, progress },
+        ]);
+      });
+
+      window.on(`${item.id}-uploadProgress`, (progress) => {
+        setZoneUploads((old) => [
+          ...old.filter(({ item: o }) => o.id !== item.id),
+          { item, progress },
+        ]);
+      });
+
+      return item;
+    });
+
+    return () => {};
+  }, [zone]);
 
   return (
     <div className="flex w-full h-full">
@@ -262,7 +284,114 @@ let LocalZone = ({ zone, setZone }) => {
           </ContextMenuTrigger>
         </div>
       </div>
-      <div className="flex flex-col w-1/3 h-full "></div>
+      <div className="flex flex-col w-2/5 h-full">
+        <div className="flex flex-col w-full h-1/2">
+          <Navbar
+            title={
+              zoneDownloads.filter(({ progress }) => progress.percentage < 100)
+                .length > 0
+                ? `Downloads (${
+                    zoneDownloads.filter(
+                      ({ progress }) => progress.percentage < 100
+                    ).length
+                  })`
+                : 'Downloads'
+            }
+            backButton={false}
+          />
+
+          <div className="flex flex-col w-full h-full overflow-y-auto">
+            {zoneDownloads &&
+              zoneDownloads.length > 0 &&
+              zoneDownloads
+                .sort((a, b) => {
+                  if (a.progress.percentage > b.progress.percentage) return -1;
+                  if (a.progress.percentage < b.progress.percentage) return 1;
+                  return 0;
+                })
+                .map(({ item, progress }) => (
+                  <div className="flex justify-between items-center border-b border-gray-300 dark:border-gray-800 px-2 py-3">
+                    <div className="flex items-center">
+                      <div className="text-xss">{item.name}</div>
+                    </div>
+                    {progress.percentage < 100 ? (
+                      <div className="flex justify-center items-center ml-auto">
+                        <div className="flex ml-1 text-green-500 text-xss">
+                          {`${progress.loaded}/${progress.total}`}
+                        </div>
+                        <div className="flex ml-1 text-green-500 text-xss">
+                          {progress > 0 && `${progress}%`}
+                        </div>
+                        <div className="flex ml-1 text-green-500 text-xss">
+                          {progress.eta}
+                        </div>
+                        <div className="flex ml-1 text-green-500 text-xss">
+                          {progress.speed !== '' && `${progress.speed}/s`}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex ml-1 text-green-500 text-xss">
+                        Completed
+                      </div>
+                    )}
+                  </div>
+                ))}
+          </div>
+        </div>
+        <div className="flex flex-col w-full h-1/2 border-t border-gray-300 dark:border-gray-800">
+          <Navbar
+            title={
+              zoneUploads.filter(({ progress }) => progress.percentage < 100)
+                .length > 0
+                ? `Uploads (${
+                    zoneUploads.filter(
+                      ({ progress }) => progress.percentage < 100
+                    ).length
+                  })`
+                : 'Uploads'
+            }
+            backButton={false}
+          />
+
+          <div className="flex flex-col w-full h-full overflow-y-auto">
+            {zoneUploads &&
+              zoneUploads.length > 0 &&
+              zoneUploads
+                .sort((a, b) => {
+                  if (a.progress.percentage > b.progress.percentage) return -1;
+                  if (a.progress.percentage < b.progress.percentage) return 1;
+                  return 0;
+                })
+                .map(({ item, progress }) => (
+                  <div className="flex justify-between items-center border-b border-gray-300 dark:border-gray-800 px-2 py-3">
+                    <div className="flex items-center">
+                      <div className="text-xss">{item.name}</div>
+                    </div>
+                    {progress.percentage < 100 ? (
+                      <div className="flex justify-center items-center ml-auto">
+                        <div className="flex ml-1 text-green-500 text-xss">
+                          {`${progress.loaded}/${progress.total}`}
+                        </div>
+                        <div className="flex ml-1 text-green-500 text-xss">
+                          {progress > 0 && `${progress}%`}
+                        </div>
+                        <div className="flex ml-1 text-green-500 text-xss">
+                          {progress.eta}
+                        </div>
+                        <div className="flex ml-1 text-green-500 text-xss">
+                          {progress.speed !== '' && `${progress.speed}/s`}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex ml-1 text-green-500 text-xss">
+                        Completed
+                      </div>
+                    )}
+                  </div>
+                ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

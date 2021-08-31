@@ -1,6 +1,6 @@
 {
   "name": "dropzone",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "DropZone File Sharing. You and your friends can share files through the p2p internet. DropZone makes this possible.",
   "private": true,
   "main": "electron/electron.js",
@@ -30,6 +30,7 @@
     "openports": "^0.0.1",
     "passport": "^0.4.1",
     "passport-jwt": "^4.0.0",
+    "progress-stream": "^2.0.0",
     "react": "^16.12.0",
     "react-animations": "^1.0.0",
     "react-contextmenu": "^2.14.0",
@@ -47,6 +48,7 @@
     "socket.io": "^4.1.2",
     "socket.io-client": "^4.1.2",
     "sodium-universal": "^3.0.4",
+    "through": "^2.3.8",
     "uuid": "^8.3.2"
   },
   "scripts": {

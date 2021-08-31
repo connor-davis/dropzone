@@ -9,7 +9,7 @@ import { getUserInfo } from '../state/user.slice';
 import { useHistory } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
-let ZonePage = ({ navbar = true }) => {
+let ZonePage = () => {
   let router = useHistory();
 
   let userInfo = useSelector(getUserInfo);
@@ -23,7 +23,7 @@ let ZonePage = ({ navbar = true }) => {
 
     if (displayName === userInfo.displayName)
       window.send('getLocalZone', { displayName });
-    else window.send('getRemoteZone');
+    else window.send('getRemoteZone', { displayName });
 
     window.on('userZone', (zone) => {
       setZone(zone);
@@ -33,31 +33,29 @@ let ZonePage = ({ navbar = true }) => {
   }, []);
 
   return zone.zoneOwner ? (
-    <div className="flex flex-col w-full h-full">
-      {zone.zoneOwner.displayName === userInfo.displayName ? (
-        <>
-          <Navbar title={'Your Zone'} backButton={false} />
-          <LocalZone zone={zone} setZone={setZone} />
-        </>
-      ) : (
-        <>
-          <Navbar
-            title={`${zone.zoneOwner.displayName}'s Zone`}
-            backButton={true}
-            onBackButtonClick={() => {
-              if (zone.zonePreviousDirectory === '/')
-                return router.push(`/${userInfo.publicKey}`);
-              else
-                return window.send('getRemoteFileStructure', {
-                  displayName: zone.zoneOwner.displayName,
-                  root: zone.zonePreviousDirectory,
-                });
-            }}
-          />
-          <RemoteZone zone={zone} setZone={setZone} />
-        </>
-      )}
-    </div>
+    zone.zoneOwner.displayName === userInfo.displayName ? (
+      <div className="flex flex-col w-full h-full">
+        <Navbar title={'Your Zone'} backButton={false} />
+        <LocalZone zone={zone} setZone={setZone} />
+      </div>
+    ) : (
+      <div className="flex flex-col w-full h-full">
+        <Navbar
+          title={`${zone.zoneOwner.displayName}'s Zone`}
+          backButton={true}
+          onBackButtonClick={() => {
+            if (zone.zonePreviousDirectory === '/')
+              return router.push(`/${userInfo.publicKey}`);
+            else
+              return window.send('getRemoteFileStructure', {
+                displayName: zone.zoneOwner.displayName,
+                root: zone.zonePreviousDirectory,
+              });
+          }}
+        />
+        <RemoteZone zone={zone} setZone={setZone} />
+      </div>
+    )
   ) : (
     <div className="flex justify-center items-center w-full h-full">
       <div className="flex flex-col justify-center items-center w-full h-full">
